@@ -1,0 +1,6 @@
+Shift operation in C
+  1. having bit representation [xw−1,xw−2,…,x0], the shift amount k should be a value between 0 and w – 1
+     (when k >= w, the behavior is not guaranteed according to C standards)
+  2. The C standards do not precisely define which type of right shift should be used with signed 
+     numbers—either arithmetic or logical shifts may be used(arithmetic one is often used). 
+     For unsigned data, right shifts must be logical.
