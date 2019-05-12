@@ -4,3 +4,9 @@ Shift operation in C
   2. The C standards do not precisely define which type of right shift should be used with signed 
      numbers—either arithmetic or logical shifts may be used(arithmetic one is often used). 
      For unsigned data, right shifts must be logical.
+
+Conversion rules trick of C
+  <limits.h>
+    #define INT_MAX 2147483647
+    #define INT_MIN (-INT_MAX - 1)
+
