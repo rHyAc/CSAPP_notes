@@ -8,5 +8,5 @@ Shift operation in C
 Conversion rules trick of C
   <limits.h>
     #define INT_MAX 2147483647
-    #define INT_MIN (-INT_MAX - 1)
+    #define INT_MIN (-INT_MAX - 1)  // neither -2147483648 nor 0x80000000
 
