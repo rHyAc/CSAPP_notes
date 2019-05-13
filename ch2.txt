@@ -16,14 +16,14 @@ Big/Litter-endian issues may occur when
 		from low to high in both a little-endian machine and a big-endian machine.
     
 Shift operation in C
-  1. having bit representation [xw−1,xw−2,…,x0], the shift amount k should be a value between 0 and w – 1
-     (when k >= w, the behavior is not guaranteed according to C standards)
-  2. The C standards do not precisely define which type of right shift should be used with signed 
-     numbers—either arithmetic or logical shifts may be used(arithmetic one is often used). 
-     For unsigned data, right shifts must be logical.
+	1. having bit representation [xw−1,xw−2,…,x0], the shift amount k should be a value between 0 and w – 1
+           (when k >= w, the behavior is not guaranteed according to C standards)
+	2. The C standards do not precisely define which type of right shift should be used with signed 
+	   numbers—either arithmetic or logical shifts may be used(arithmetic one is often used). 
+	   For unsigned data, right shifts must be logical.
 
 Conversion rules trick of C
-  <limits.h>
-    #define INT_MAX 2147483647
-    #define INT_MIN (-INT_MAX - 1)  // neither -2147483648 nor 0x80000000
+	<limits.h>
+    		#define INT_MAX 2147483647
+    		#define INT_MIN (-INT_MAX - 1)  // neither -2147483648 nor 0x80000000
 
