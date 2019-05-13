@@ -1,3 +1,20 @@
+Big/Litter-endian issues may occur when
+	1. a little-endian machine send data to a big-endian machine
+		solution: network standard
+	2. looking at the byte sequence representing integer data
+		eg: disassembly for x86-64
+			4004d3: 01 05 43 0b 20 00	add  %eax, 0x200b43(%rip)
+		—— lowest-numbered byte on the left and the highest on the right
+	3. programs are written that circumvent the normal type system
+		eg: C code
+			int a = 12345;	//0x00003039
+			printf("%.2x", *(char *)&a);
+		—— get 0x39 in little endian machines while 0x00 in big endian ones 
+		—— pointer points to the lowest byte address occupied by the object
+	by the way
+		"12345" is stored in memory in the form 0x31 0x32 0x33 0x34 0x35 0x00,
+		from low to high in both a little-endian machine and a big-endian machine.
+    
 Shift operation in C
   1. having bit representation [xw−1,xw−2,…,x0], the shift amount k should be a value between 0 and w – 1
      (when k >= w, the behavior is not guaranteed according to C standards)
