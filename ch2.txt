@@ -27,6 +27,20 @@ Conversion rules trick of C
     		#define INT_MAX 2147483647
     		#define INT_MIN (-INT_MAX - 1)  // neither -2147483648 nor 0x80000000
 		
+ two's-complement arithmetic operations overflows test
+ 	1. can't use subtraction to test whether addition has overflowed
+		/* int x, int y */
+		int sum = x + y;
+		/* wrong */
+		// return (sum - x == y) && (sum - y == x);
+		/* right */
+		return !(x < 0 && y < 0 && sum >= 0) &&
+		       !(x >= 0 && y >= 0 && sum < 0);
+ 	2. can use division to test whether multiplication has overflowed
+		/* int x, int y */
+		int p = x * y;
+		return !x || p / x == y;
+		
 IEEE float point representation
 	1. normalized values: exp bit field is neither all zeros nor ones
 	2. denormalized values: exp bit field is all zeros. In this case the exp value is 
@@ -36,7 +50,7 @@ IEEE float point representation
 	   When it isn't, the value is called a "NaN" used to represent sqrt(-1) sometimes
 
 The IEEE floating-point format defines four different rounding modes
-	1. round to even, aka round to nearest, and the values are halfway between two possible results
+	1. round to even, as default, aka round to nearest, and the values are halfway between two possible results
 	   are rounded to the least significant digit of the result is even
 	2. round toward zero
 	3. round down
