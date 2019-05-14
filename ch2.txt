@@ -29,9 +29,9 @@ Conversion rules trick of C
 		
 IEEE float point representation
 	1. normalized values: exp field is neither all zeros nor ones
-	2. denormalized values: exp field is all zeros. In this cse the exp value is E = 1 - bias(127 for 32bit),
+	2. denormalized values: exp field is all zeros. In this cse the exp value is E = 1 - bias(127 for 32bit, 2^(8 - 1) - 1)
 	   while the significant value without an implied leading 1. This case is serve for representation of +/-0.0 
 	   and values evenly near 0.0
 	3. special values: exp field is all ones. When fraction field is all zeros, it represent +/-infinity; 
-	   When it isn't, the value is called a "NaN", used to represent sqrt(-1) sometimes
+	   When it isn't, the value is called a "NaN" used to represent sqrt(-1) sometimes
 
