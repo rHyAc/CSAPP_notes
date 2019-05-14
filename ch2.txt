@@ -26,4 +26,12 @@ Conversion rules trick of C
 	<limits.h>
     		#define INT_MAX 2147483647
     		#define INT_MIN (-INT_MAX - 1)  // neither -2147483648 nor 0x80000000
+		
+IEEE float point representation
+	1. normalized values: exp field is neither all zeros nor ones
+	2. denormalized values: exp field is all zeros. In this cse the exp value is E = 1 - bias(127 for 32bit),
+	   while the significant value without an implied leading 1. This case is serve for representation of +/-0.0 
+	   and values evenly near 0.0
+	3. special values: exp field is all ones. When fraction field is all zeros, it represent +/-infinity; 
+	   When it isn't, the value is called a "NaN", used to represent sqrt(-1) sometimes
 
