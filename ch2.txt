@@ -35,3 +35,9 @@ IEEE float point representation
 	3. special values: exp bit field is all ones. When fraction field is all zeros, it represent +/-infinity; 
 	   When it isn't, the value is called a "NaN" used to represent sqrt(-1) sometimes
 
+The IEEE floating-point format defines four different rounding modes
+	1. round to even, aka round to nearest, and the values are halfway between two possible results
+	   are rounded to the least significant digit of the result is even
+	2. round toward zero
+	3. round down
+	4. round up
