@@ -14,13 +14,6 @@ Big/Litter-endian issues may occur when
 	by the way
 		"12345" is stored in memory in the form 0x31 0x32 0x33 0x34 0x35 0x00,
 		from low to high in both a little-endian machine and a big-endian machine.
-    
-Shift operation in C
-	1. having bit representation [xw−1,xw−2,…,x0], the shift amount k should be a value between 0 and w – 1
-           (when k >= w, the behavior is not guaranteed according to C standards)
-	2. The C standards do not precisely define which type of right shift should be used with signed 
-	   numbers—either arithmetic or logical shifts may be used(arithmetic one is often used). 
-	   For unsigned data, right shifts must be logical.
 
 Conversion rules trick of C
 	<limits.h>
