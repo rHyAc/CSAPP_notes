@@ -15,7 +15,7 @@ AT&T assembly format addressing modes
 		3. Imm is signed
 
 Instructions
-	mov 
+	mov instructions
 		cannot have both operands refer to memory locations
 	movq 
 		only have immediate source operands that can be represented as 32-bit two'scomplement numbers,
@@ -43,7 +43,29 @@ Instructions
 			@register %rdx contains value x, set register %rax to 5x + 7
 			leaq 7(%rdx,%rdx,4), %rax
 			
-	add, subb, imull, xor, or, and
+	add, subb, imul(one form), xor, or, and
 		1. two operands cannot both be memory locations
 		2. when the second operand is a memory location, the processor must read the value from memory,
 		   perform the operation, and then write the result back to memory
+		   
+	shift instructions
+		can specify the shift amount  either as an immediate value or with the low m bits 
+		in the single-byte register %cl, where 2 ^ m less than the bit length of the value to shift
+	
+	imulq S(the other form)
+		1. R[%rdx]:R[ %rax ] ← S * R[%rax]
+		2. signed full multiply
+	mulq S
+		1. R[%rdx]:R[%rax] ← S * R[%rax]
+		2. unsigned full multiply
+	cqto
+		1. R[%rdx]:R[%rax] ← SignExtend(R[%rax])
+		2. convert to oct word
+	idivq S
+		1. R[%rdx] ← R[%rdx]:R[%rax] % S;
+		   R[%rax] ← R[%rdx]:R[%rax] / S
+		2. signed divide
+	divq S
+		1. R[%rdx] ← R[%rdx]:R[%rax] % S;
+		   R[%rax] ← R[%rdx]:R[%rax] / S
+		2. unsigned divide
