@@ -1,0 +1,49 @@
+Registers
+	63                                31                15        7    0
+	   %rax                              %eax              %ax      %al  
+	   %r8                               %r8d              %r8w     %r8b
+	                                     —— d for double word       
+	   
+The remaining bytes in the register for instructions that generate less than 8 bytes:
+	1. instructions that generate 1-or 2-byte quantities leave the remaining bytes unchanged
+	2. instructions that generate 4-byte quantities set the upper 4 bytes of the register to zero
+
+AT&T assembly format addressing modes
+	Imm(rb, ri, s): Imm + R[rb] + R[ri] * s
+		1. s must be 1, 2, 4, or 8
+		2. rb and ri must be 64-bit registers
+		3. Imm is signed
+
+Instructions
+	mov 
+		cannot have both operands refer to memory locations
+	movq 
+		only have immediate source operands that can be represented as 32-bit two'scomplement numbers,
+		this value is then sign extended to produce the 64-bit value for the destination.
+	movabsq 
+		can have an arbitrary 64-bit immediate value as its source operand 
+		and can only have a register as a destination
+	
+	cltq(has no operands)
+		sign-extend %eax to %rax
+		
+	movzlq does not exist, because movl have the same effect
+	
+	pushq S
+		R[%rsp] ← R[%rsp] –8
+		M[R[%rsp]] ← S
+	popq D
+		D ← M[R[%rsp]];
+		D ← M[R[%rsp]];
+		
+	leaq S, D
+		1. D ← &S
+		2. can be used to compactly describe common arithmetic operations
+		   e.g.
+			@register %rdx contains value x, set register %rax to 5x + 7
+			leaq 7(%rdx,%rdx,4), %rax
+			
+	add, subb, imull, xor, or, and
+		1. two operands cannot both be memory locations
+		2. when the second operand is a memory location, the processor must read the value from memory,
+		   perform the operation, and then write the result back to memory
