@@ -104,6 +104,16 @@ Instructions
 		D ← CF, below (unsigned <)
 	setbe/setna D  
 		D ← CF | ZF, below or equal (unsigned <=)
+		
+	jmp
+		1. direct jumps are written in assembly code by giving a label(or Imm) as the jump target
+		2. Indirect jumps are written using '*' followed by an operand specifier using a register 
+		   or a memory location where the jump target is stored 
+	
+	cmov(z, nz, s, ns, g, le...) instructions
+		1. transfer the data from the source register or memory location to the destination register, 
+		   only when the condition specified by the suffix holds
+		2. the source and destination values can be 16, 32, or 64 bits long
 	
 Condition registers
 	CF: Carry flag. The most recent operation generated a carry out of the most significant bit. 
