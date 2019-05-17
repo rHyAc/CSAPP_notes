@@ -60,7 +60,7 @@ Instructions
 		2. unsigned full multiply
 	cqto
 		1. R[%rdx]:R[%rax] ← SignExtend(R[%rax])
-		2. convert to oct word
+		2. convert to oct word, needed before div instructions
 	idivq S
 		1. R[%rdx] ← R[%rdx]:R[%rax] % S;
 		   R[%rax] ← R[%rdx]:R[%rax] / S
@@ -69,3 +69,51 @@ Instructions
 		1. R[%rdx] ← R[%rdx]:R[%rax] % S;
 		   R[%rax] ← R[%rdx]:R[%rax] / S
 		2. unsigned divide
+	—— S can't be Imm
+	
+	cmp(s2, s1) instructions
+		s1 - s2
+	test(s2, s1) instructions
+		s1 & s2
+	
+	set instructions
+		has either one of the low-order single-byte register elements or a single-byte memory location 
+		as its destination, setting a single byte to 0 or to 1 depending on some combination of 
+		the condition codes
+	sete/setz D
+		D ← ZF, equal / zero
+	setne/setnz D  
+		D ← ~ZF, not equal / not zero
+	sets D 
+		D ← SF, egative
+	setns D 
+		D ← ~SF, nonnegative
+	setg/setnle D  
+		D ← ~(SF ^ OF) & ~ZF, greater (signed >)
+	setge/setnl D  
+		D ← ~ (SF ^ OF), greater or equal (signed>=)
+	setl/setnge D  
+		D ← SF ^ OF, less (signed <)
+	setle/setng D  
+		D ← (SF ^ OF) | ZF, less or equal (signed <=)
+	seta/setnbe D  
+		D ← ~CF & ~ ZF, above (unsigned >)
+	setae/setnb D  
+		D ← ~CF, above or equal (unsigned >=)
+	setb/setnae D  
+		D ← CF, below (unsigned <)
+	setbe/setna D  
+		D ← CF | ZF, below or equal (unsigned <=)
+	
+Condition registers
+	CF: Carry flag. The most recent operation generated a carry out of the most significant bit. 
+	    Used to detect overflow for unsignedoperations.
+	ZF: Zero flag. The most recent operation yielded zero.
+	SF: Sign flag. The most recent operation yielded a negative value.
+	OF: Overflow flag. The most recent operation caused a two'scomplement overflow—either negative or positive.
+	
+	1. leaq does not alter any condition codes
+	2. For the logical operations, the carry and overflow flags are set to zero
+	3. For the shift operations, the carry flag is set to the last bit shifted out, 
+	   while the overflow flag is set to zero
+	4. the inc and dec instructions set the overflow and zero flags, but they leave the carry flag unchanged
