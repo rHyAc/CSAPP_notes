@@ -105,10 +105,10 @@ Instructions
 	setbe/setna D  
 		D ← CF | ZF, below or equal (unsigned <=)
 		
-	jmp
-		1. direct jumps are written in assembly code by giving a label(or Imm) as the jump target
-		2. Indirect jumps are written using '*' followed by an operand specifier using a register 
-		   or a memory location where the jump target is stored 
+	jmp/call
+		1. direct jumps/calls are written in assembly code by giving a label(or Imm) as the target
+		2. Indirect jumps/calls are written using '*' followed by an operand specifier using a register 
+		   or a memory location where the target is stored 
 	
 	cmov(z, nz, s, ns, g, le...) instructions
 		1. transfer the data from the source register or memory location to the destination register, 
@@ -127,3 +127,6 @@ Condition registers
 	3. For the shift operations, the carry flag is set to the last bit shifted out, 
 	   while the overflow flag is set to zero
 	4. the inc and dec instructions set the overflow and zero flags, but they leave the carry flag unchanged
+
+Pass arguments
+	1. . when passing parameters on the stack, each argument size is rounded up to be multiples of eight bytes
