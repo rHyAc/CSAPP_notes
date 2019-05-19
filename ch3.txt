@@ -2,7 +2,12 @@ Registers
 	63                                31                15        7    0
 	   %rax                              %eax              %ax      %al  
 	   %r8                               %r8d              %r8w     %r8b
-	                                     —— d for double word       
+	                                     —— d for double word 
+					     
+	128					127					0
+	    %ymm0				    %xmm0				  1st FP arg/return value
+	    %ymm1-7				    %xmm1-7				  2nd-8th arg
+	    %ymm8-15				    %xmm8-15				  caller saved
 	   
 The remaining bytes in the register for instructions that generate less than 8 bytes:
 	1. instructions that generate 1-or 2-byte quantities leave the remaining bytes unchanged
@@ -115,6 +120,22 @@ Instructions
 		   only when the condition specified by the suffix holds
 		2. the source and destination values can be 16, 32, or 64 bits long
 	
+	leave
+		movq	%rbp, %rsp
+		popq	%rbp
+	
+	
+	vmovss(single)
+	vmovsd(double)
+		1. transferring floating-point data between memory and xmm registers, as well as from one xmm
+		   register to another without any conversions. 
+		2. these instructions will work correctly regardless of the alignment of data
+	
+	vmovaps(aligned packed single)
+	vmovapd(aligned packed double)
+		1. mov 128-bit data between mem and xmm reg, or between two xmm reg
+		2. data need to be 16-byte aligned
+	
 Condition registers
 	CF: Carry flag. The most recent operation generated a carry out of the most significant bit. 
 	    Used to detect overflow for unsignedoperations.
@@ -129,4 +150,10 @@ Condition registers
 	4. the inc and dec instructions set the overflow and zero flags, but they leave the carry flag unchanged
 
 Pass arguments
-	1. . when passing parameters on the stack, each argument size is rounded up to be multiples of eight bytes
+	when passing parameters on the stack, each argument size is rounded up to be multiples of eight bytes
+
+Pointer subtraction
+	When two pointers are subtracted, both shall point to elements of the same array object,
+	or one past the last element of the array object; the result is the difference of the subscripts of 
+	the two array elements. The size of the result is implementation-defined, 
+	and its type (a signed integer type) is ptrdiff_t
