@@ -114,6 +114,11 @@ Instructions
 		1. direct jumps/calls are written in assembly code by giving a label(or Imm) as the target
 		2. Indirect jumps/calls are written using '*' followed by an operand specifier using a register 
 		   or a memory location where the target is stored 
+		   
+	jp
+		1. jump when PF set 1
+		2. used to conditionally jump when a floating-point comparison yields an unordered result
+		   (when either operand is NaN)
 	
 	cmov(z, nz, s, ns, g, le...) instructions
 		1. transfer the data from the source register or memory location to the destination register, 
@@ -125,35 +130,111 @@ Instructions
 		popq	%rbp
 	
 	
-	vmovss(single)
-	vmovsd(double)
-		1. transferring floating-point data between memory and xmm registers, as well as from one xmm
-		   register to another without any conversions. 
+	vmovss(single)	
+	vmovsd(double)	
+		1. transferring floating-point data between memory and xmm registers
+			1. X[~:0] ← M[~:0]
+			   Y[VLMAX-1:~] ← 0
+			2. M[~:0] ← X[~:0]
 		2. these instructions will work correctly regardless of the alignment of data
-	
+		3. merge scalar single-precision floating-point value from 2 xmm regs to 1 xmm reg.
+			X1[~:0] ← X3[~:0]
+			X1[127:~] ← X2[127:~]
+			Y1[VLMAX-1:128] ← 0
+
 	vmovaps(aligned packed single)
 	vmovapd(aligned packed double)
-		1. mov 128-bit data between mem and xmm reg, or between two xmm reg
-		2. data need to be 16-byte aligned
+		1. mov 128/256-bit data between mem and xmm/ymm reg, or between two xmm/ymm regs,
+		   when the dest operand is xmm, the high 128 bits of it are cleared to 0
+		2. data need to be 16/32-byte aligned
+	
+	vcvttss2si	
+	vcvttsd2si	X/M32, R32
+	vcvttss2siq	
+	vcvttsd2siq	X/M64, R64
+		1. convert with truncation single/double precision to integer
+		2. values are rounded to zero
+	vcvtsi2ss	
+	vcvtsi2sd	M32/R32, X2, X1
+	vcvtsi2ssq	
+	vcvtsi2sdq	M64/R64, X2, X1
+	vcvtss2sd	M32/X3, X2, X1
+	vcvtsd2ss	M64/X3, X2, X1
+		X1[~:0] ← M/R/X3[~:0]
+		X1[127:~] ← X2[127:~]
+		Y1[VLMAX-1:128] ← 0
+		
+	vaddss	
+	vsubss	
+	vmulss
+	vdivss	M32/X3, X2, X1
+	vaddsd	
+	vsubsd
+	vmulsd	
+	vdivsd	M64/X3, X2, X1
+		X1[~:0] ←  X2[~:0] op M/X3[~:0]
+		X1[127:~] ← X2[127:~]
+		Y1[VLMAX-1:128] ← 0
+	
+	vmaxss
+	vminss	M32/X3, X2, X1
+	vmaxsd	
+	vminsd	M64/X3, X2, X1
+		X1[~:0] ←  op(X2[~:0], M/X3[~:0])
+		X1[127:~] ← X2[127:~]
+		Y1[VLMAX-1:128] ← 0		
+	
+	sqrtss	M32/X3, X2, X1
+	sqrtsd	M64/X3, X2, X1
+		X1[~:0] ←  sqrt(M/X3[~:0])
+		X1[127:~] ← X2[127:~]
+		Y1[VLMAX-1:128] ← 0	
+	
+	vandps	
+	vorps
+	vxorps
+	vandpd
+	vorpd
+	vxorpd	M128/X3, X2, X1 (M256/Y3, Y2, Y1)
+		1. 128/256 bitwise logical ops of packed single/double-precision floating-point values 
+		   in X2 and M/32, and store the result in X1. 
+		2. when the dest operand is xmm, the high 128 bits of it are cleared to 0
+		
+	vucomiss	M32/X2, X1
+	vucomisd	M64/X2, X1
+				OF, AF, SF ← 000
+		UNORDERED:	ZF, PF, CF ← 111
+                X1 > M/X2: 	ZF, PF, CF ← 000
+                X1 < M/X2       ZF, PF, CF ← 001
+                X1 = M/X2       ZF, PF, CF ← 100
 	
 Condition registers
-	CF: Carry flag. The most recent operation generated a carry out of the most significant bit. 
+	CF: carry flag. The most recent operation generated a carry out of the most significant bit. 
 	    Used to detect overflow for unsignedoperations.
-	ZF: Zero flag. The most recent operation yielded zero.
-	SF: Sign flag. The most recent operation yielded a negative value.
-	OF: Overflow flag. The most recent operation caused a two'scomplement overflow—either negative or positive.
+	ZF: zero flag. The most recent operation yielded zero.
+	SF: sign flag. The most recent operation yielded a negative value.
+	OF: overflow flag. The most recent operation caused a two'scomplement overflow—either negative or positive.
+	
+	PF: when comparing 2 float point operands, the flag is set when either operand is NaN
 	
 	1. leaq does not alter any condition codes
-	2. For the logical operations, the carry and overflow flags are set to zero
-	3. For the shift operations, the carry flag is set to the last bit shifted out, 
+	2. for the logical operations, the carry and overflow flags are set to zero
+	3. for the shift operations, the carry flag is set to the last bit shifted out, 
 	   while the overflow flag is set to zero
 	4. the inc and dec instructions set the overflow and zero flags, but they leave the carry flag unchanged
+	
+	5.  the values of the carry and zero flags in float-point comparison are the same as those for an
+	    unsigned comparison, except for unordered case.
 
 Pass arguments
 	when passing parameters on the stack, each argument size is rounded up to be multiples of eight bytes
 
 Pointer subtraction
-	When two pointers are subtracted, both shall point to elements of the same array object,
+	when two pointers are subtracted, both shall point to elements of the same array object,
 	or one past the last element of the array object; the result is the difference of the subscripts of 
 	the two array elements. The size of the result is implementation-defined, 
 	and its type (a signed integer type) is ptrdiff_t
+
+Floating-Point constants
+	unlike integer arithmetic operations, AVX floating-point operations cannot have immediate values as operands. 
+	Instead, it must allocate and initialize storage for any constant values. 
