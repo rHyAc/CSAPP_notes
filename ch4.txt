@@ -1,0 +1,26 @@
+Processing stages
+	fetch: at the beginning, PC(not a hardware register, only a specifier) is set to 
+	       the address of the instruction is going to be fetch, according to the state 
+	       information of the previous cycle
+ 	decode: read up to tow operands from register file
+	memory: write/read data to/from memory
+	write back: write up to two results to register file
+
+
+Timing and pipeline
+	1. combinational logic does not require any sequencing or control — values propagate through 
+	   a network of logic gates whenever the inputs change
+	2. reading from a random access memory(including register file and virtual memory system)
+	   operates much like combinational logic is assumed like combinational logic
+	3. the program counter(a hardware register), the condition code register, the data memory, and the register file. 
+	   These are controlled via a single clock signal that triggers the loading of new values into the
+	   clocked registers and the writing of values to the random access memories. All of the state updates 
+	   actually occur simultaneously and only as the clock rises to start the next cycle
+	4. having clocked registers between blocks of combinational logic suffices to control the
+	   flow of instructions in the pipeline. 
+	5. information about a particular instruction contained within a previous pipeline stage that 
+	   will be used in following stages need to be carried with that instruction along in the pipeline 
+	   by storing it in the register of each stage
+	   
+	   
+	
