@@ -18,9 +18,37 @@ Timing and pipeline
 	   actually occur simultaneously and only as the clock rises to start the next cycle
 	4. having clocked registers between blocks of combinational logic suffices to control the
 	   flow of instructions in the pipeline. 
-	5. information about a particular instruction contained within a previous pipeline stage that 
-	   will be used in following stages need to be carried with that instruction along in the pipeline 
-	   by storing it in the register of each stage
+	5. signals generated in a pipeline stage that will be used in following stages need to be 
+	   carried along in the pipeline by being stored in registers of each stage until reaching their destination
+	(6.keep all of the information about a particular instruction contained within a single pipeline stage)
 	   
+	NOTEIC: jump instructions require the value of valP in the execute stage in the event the jump is not taken
 	   
-	
+Pipeline hazards
+	dependencies between successive instructions can mainly take two forms:
+		1. data dependencies, where the results computed by one instruction are used as the data 
+		   for a following instruction
+		2. control dependencies, where one instruction determines the location of the following instruction
+		
+	hazards: a potential erroneous computation by the pipeline results from dependencies
+		1. data hazards 
+			resolution
+				1. stalling, injecting a bubble into the a stage each time and holding 
+				   an instruction back in a previous stage by keeping pipeline register
+				   of it in a fixed state(but there is no way to inject a bubble into the 
+				   fetch stage)
+				2. fawarding, passing a result value(e_valE, m_valM, M_valE, W_valM, and W_valE 
+				   —— priority decreases from left to right) directly from one pipeline stage 
+				   to an earlier one(usually the decode stage)
+		2. control hazards
+			the resolution to misperdiction
+				1. instruction squashing, once branch logic detects that the jump should not be 
+				   taken during execute stage, cancel the misfetched instructions by injecting 
+				   bubbles into their following stages while also fetching the instruction following 
+				   the jump instruction
+				   
+Exception handling
+	when an exception occurs in one ormore stages of a pipeline, the information is simply stored in the status
+	fields of the pipeline registers. The event has no effect on the flow ofinstructions in the pipeline until 
+	an excepting instruction reaches the final pipeline stage, except to disable any updating of the programmer
+	visible state (the condition code register and the memory) by later instructions in the pipeline
