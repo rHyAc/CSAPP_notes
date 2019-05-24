@@ -3,6 +3,7 @@ Processing stages
 	       the address of the instruction is going to be fetch, according to the state 
 	       information of the previous cycle
  	decode: read up to tow operands from register file
+	execute: including generate cond
 	memory: write/read data to/from memory
 	write back: write up to two results to register file
 
@@ -20,7 +21,7 @@ Timing and pipeline
 	   flow of instructions in the pipeline. 
 	5. signals generated in a pipeline stage that will be used in following stages need to be 
 	   carried along in the pipeline by being stored in registers of each stage until reaching their destination
-	(6.keep all of the information about a particular instruction contained within a single pipeline stage)
+	(6. keep all of the information about a particular instruction contained within a single pipeline stage)
 	   
 	NOTEIC: jump instructions require the value of valP in the execute stage in the event the jump is not taken
 	   
@@ -33,7 +34,7 @@ Pipeline hazards
 	hazards: a potential erroneous computation by the pipeline results from dependencies
 		1. data hazards 
 			resolution
-				1. stalling, injecting a bubble into the a stage each time and holding 
+				1. stalling, injecting a bubble(nop) into the a stage each time and holding 
 				   an instruction back in a previous stage by keeping pipeline register
 				   of it in a fixed state(but there is no way to inject a bubble into the 
 				   fetch stage)
@@ -42,13 +43,18 @@ Pipeline hazards
 				   to an earlier one(usually the decode stage)
 		2. control hazards
 			the resolution to misperdiction
-				1. instruction squashing, once branch logic detects that the jump should not be 
-				   taken during execute stage, cancel the misfetched instructions by injecting 
-				   bubbles into their following stages while also fetching the instruction following 
-				   the jump instruction
+				instruction squashing, once branch logic detects that the jump should not be 
+				taken during execute stage, cancel the misfetched instructions by injecting 
+				bubbles into their following stages while also fetching the instruction following 
+				the jump instruction
 				   
 Exception handling
-	when an exception occurs in one ormore stages of a pipeline, the information is simply stored in the status
-	fields of the pipeline registers. The event has no effect on the flow ofinstructions in the pipeline until 
-	an excepting instruction reaches the final pipeline stage, except to disable any updating of the programmer
-	visible state (the condition code register and the memory) by later instructions in the pipeline
+	1. when an exception occurs in one ormore stages of a pipeline, the information is simply stored in the status
+	   fields of the pipeline registers. The event has no effect on the flow ofinstructions in the pipeline until 
+	   an excepting instruction reaches the final pipeline stage, except to disable any updating of the programmer
+	   visible state (the condition code register and the memory) by later instructions in the pipeline
+	2. As the excepting instruction reaches the memory stage, take steps to prevent later instructions from 
+	   modifying the programmer-visible state by 
+		1. disabling the setting of condition codes by instructions in the execute stage
+		2. injecting bubbles into the memory stage to disable any writing to the data memory
+		3. stalling the write-back stage when it has an excepting instruction
