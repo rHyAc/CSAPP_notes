@@ -1,0 +1,27 @@
+
+Optimizing performance 
+	1.reducing Procedure Calls
+	2. eliminating unneeded memory referrence
+	3. loop unrolling
+		1. why
+			1. it reduces the number of operations that do not contribute directly to the program result, 
+		   	   such as loop indexing and conditional branching
+			2. it exposes ways in which we can further transform the code to reduce the number of operations 
+		    	   in the critical paths of the overall computation
+		2. how
+			1. k x i unrolling, where i = 1, 2, 3...
+				int i;
+				/* n is the length of array */
+				for (i = 0; i < n - k + 1; i += k) {...}
+				for (; i < n; i++) {...}
+			2. k × k unrolling transformation
+				for a combining operation that is associative and commutative, such as integer addition 
+				or multiplication, we can improve performance by splitting the set of combining operations
+				into k parts andcombining the results at the end
+  			3. operation with latency L and capacity C, this requires an unrolling factor k ≥ C * L
+	4. reassociation transformation(2 x 1a unrolling)
+		acc = acc OP (data[i] OP data[i+1]);
+		/* rather than */
+		//acc = (acc OP data[i]) OP data[i+1];
+
+
