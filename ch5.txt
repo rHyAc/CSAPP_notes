@@ -1,6 +1,5 @@
-
 Optimizing performance 
-	1.reducing Procedure Calls
+	1. eliminate excessive procedure calls
 	2. eliminating unneeded memory referrence
 	3. loop unrolling
 		1. why
@@ -18,10 +17,31 @@ Optimizing performance
 				for a combining operation that is associative and commutative, such as integer addition 
 				or multiplication, we can improve performance by splitting the set of combining operations
 				into k parts andcombining the results at the end
-  			3. operation with latency L and capacity C, this requires an unrolling factor k ≥ C * L
-	4. reassociation transformation(2 x 1a unrolling)
+  			3. operation with latency L(the time needed to perform the operation in a functional unit) and 
+			   capacity C(the number of functional units), this requires an unrolling factor k ≥ C * L. 
+			   But if k is greater than the number of free registers, it will be less efficient
+	4. reassociation transformation(k x 1a unrolling)
+		/* when k = 2 */
 		acc = acc OP (data[i] OP data[i+1]);
 		/* rather than */
 		//acc = (acc OP data[i]) OP data[i+1];
-
-
+	 5. Write code suitable for implementation with conditional moves
+	 	eg:
+			min = a < b ? a : b
+		and
+			while (i < n && j < n)
+			{
+				a = p[i];
+				b = q[j];
+				cmp = a < b;
+				dest[k++] = cmp ? a : b;
+				i += cmp;
+				j += !cmp;
+			}
+			/* rather than */
+			//while (i < n && j < n)
+			//	if (p[i] < q[j];
+			//		dest[k++] = p[i++];
+			//	else
+			//		dest[k++] = q[j++];
+	
