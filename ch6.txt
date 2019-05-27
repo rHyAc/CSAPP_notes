@@ -66,4 +66,12 @@ solid state disk (SSD)
 	   (typically, this means that all bits in the block are set to 1), and any other pages in this block with 
 	   useful data must be copied to a new (erased) block. However, once a block is erased, each page in the block 
 	   can be written once with no further erasing. Therefore, reading from SSDs is faster than writing
+
+Cache
+	a cache is organized as an array of S = 2 cache sets. Each set consists of E cache lines. 
+	Each line consists of a data block of B = 2 bytes, a valid bit that indicates whether or not the line
+	contains meaningful information, and t = m − (b + s) [memory address has m bits that form M = 2 unique 
+	addresses] tag bits (a subset of the bits from the current block's memory address) that uniquely identify 
+	the block stored in the cache line. And the size (or capacity) of the cache, C, is equal S × E × B 
+	(the tag bits and valid bit are not included)
 	 
