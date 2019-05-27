@@ -1,0 +1,69 @@
+
+DRAM
+	1. the cells (bits) in a DRAM chip are partitioned into d supercells, each consisting of w DRAM cells. 
+	   A d * w DRAM stores a total of d * w bits of information. The supercells are organized as 
+	   a rectangular array with r rows and c columns, where r * c = d. Each supercell has an address of
+	   the form (i, j)
+	2. information flows in and out of the DRAM chip via external connectors called pins. Each pin carries 
+	   a 1-bit signal
+	3.  memory controller sends the row address i to the DRAM, followed by the column address j to access DRAM.
+	    The row address i is called a RAS (row access strobe) request. The column address j is called a CAS
+	    (column access strobe) request. Notice that the RAS and CAS requests share the same DRAM address pins
+	4. DRAM chips are packaged in memory modules
+	
+	5. a conventional DRAM copies an entire row of supercells into its internal row buffer, uses one, 
+	   and then discards the rest.
+
+Synchronous DRAM (SDRAM)
+	 conventional DRAMs are asynchronous in the sense that they communicate with the memory controller using 
+	 a set of explicit control signals. SDRAM replaces many of these control signals with the rising edges of 
+	 the same external clock signal that drives the memory controller to be faster
+
+Double Data-Rate Synchronous DRAM(DDR SDRAM)
+	doubles the speed of the SDRAM by using both clock edges as control signals. Different types of DDR SDRAMs 
+	are characterized by the size of a small prefetch buffer that increases the effective bandwidth: 
+	DDR (2bits), DDR2 (4 bits), and DDR3 (8 bits)
+	 
+Disk
+	1. each track on the surface of a platter of a disk is partitioned into a collection of sectors separated 
+	   by gaps whereno data bits are stored. 
+	2. gaps store formatting bits that identify sectors.
+	3. each sector contains an equal number of data bits (typically 512 bytes)
+	4. data can be encode in both 2 surfaces of a platter  
+	
+	5. the original disks, designed in an age of low areal density, partitioned every track into the same number 
+	   of sectors, which was determined by the number of sectors that could be recorded on the innermost track
+	6. modern high-capacity disks use a technique known as multiple zone recording, where the set of cylinders 
+	   is partitioned into disjoint subsets known as recording zones. Each zone consists of a contiguous collection 
+	   of cylinders. Each track in each cylinder in a zone has the same number of sectors, which is determined 
+	   by the number of sectors that can be packed into theinnermost track of the zone
+	   
+	7. disks read and write data in sector-size blocks. The access time for a sector has three main components: 
+	   seek time, rotational latency, and transfer time
+	   
+	8. modern disks present a simpler view of their geometry as a sequence of B sector-size logical blocks, 
+	   numbered 0, 1, ..., B − 1. A small hardware/firmware device in the disk package, called the disk controller, 
+	   maintains the mapping between logical block numbers and actual (physical) disk sectors.
+	   
+	9. low level formmat: before a disk can be used to store data, it must be formatted by the disk controller
+		1. filling in the gaps between sectors with information that identifies the sectors
+		2. identifying any cylinders with surface defects and taking them out of action
+		3. setting aside a set of cylinders in each zone as spares
+	
+	10. direct memory access (DMA)
+		 CPU → I/O (read): 
+		 	1. sends a command word that tells the disk to initiate a read, along with other parameters 
+			   such as whether to interrupt the CPU when the read is finished
+			2. indicates the logical block number that should be read. 
+			3. indicates the main memory address where the contents of the disk sector should be stored.
+
+solid state disk (SSD) 
+	1. an SSD package consists of one or more flash memory chips with a flash translation layer plays the same role 
+	   as a disk controller
+	2. a flash memory consists of a sequence of blocks, where each block consists of pages
+	3. data are read and written in units of pages. 
+	4. a page can be written only after the entire block to  which it belongs has been erased 
+	   (typically, this means that all bits in the block are set to 1), and any other pages in this block with 
+	   useful data must be copied to a new (erased) block. However, once a block is erased, each page in the block 
+	   can be written once with no further erasing. Therefore, reading from SSDs is faster than writing
+	 
