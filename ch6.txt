@@ -68,10 +68,53 @@ solid state disk (SSD)
 	   can be written once with no further erasing. Therefore, reading from SSDs is faster than writing
 
 Cache
-	a cache is organized as an array of S = 2 cache sets. Each set consists of E cache lines. 
-	Each line consists of a data block of B = 2 bytes, a valid bit that indicates whether or not the line
-	contains meaningful information, and t = m − (b + s) [memory address has m bits that form M = 2 unique 
-	addresses] tag bits (a subset of the bits from the current block's memory address) that uniquely identify 
-	the block stored in the cache line. And the size (or capacity) of the cache, C, is equal S × E × B 
-	(the tag bits and valid bit are not included)
+	1. a cache is organized as an array of S = 2 ^ s cache sets. 
+	2. each set consists of E cache lines (E-way set associative cache)
+	3. each line consists of a data block (a fixed-size packet of information that moves back and forth 
+	   between a cache and main memory) of B = 2 ^ b bytes (as well as other information such as the valid bit 
+	   and the tag bits)
+	4. the size (or capacity) of the cache, C, is equal to S × E × B 
+	   (the tag bits, valid bit and so on are not included)
+	   
+	5. a valid bit that indicates whether or not the line contains meaningful information
+	6. a cache taking write-back policy must maintain an additional dirty bit
+	7. t = m − (b + s) [memory address has m bits that form M = 2 ^ m unique addresses] tag bits (a subset of the 
+	   bits from the current block's memory address) that uniquely identify  the block stored in the cache line
 	 
+	8. deal with write misses
+		1. write-allocate, loads the corresponding block from the next lower level into the cache and then 
+		   updates the cache block [typically with write-back (caches further down the hierarchy are more 
+		   likely to use write-back)]
+		2. no-write-allocate, bypasses the cache and writes the word directly to the next lower level
+		   [typically with write-through (can use a write buffer that works independently of the cache 
+		   to update memory)]
+	
+	9. i-cache and d-cache
+		why
+			1. access at the same time
+			2. different design
+			3. data accesses do not create conflict misses with instruction accesses
+	
+	10. trade-off
+		1. cache size +	---→ hit rate + ; hit time +
+		2. block size +	---→ spatial locality + ; temporal locality - , miss penalty +
+		3. E-way + 	---→ conflict misses - ; cost + , hit time + , miss penalty +
+		   (a higher degree of associativity usually for the lower levels, where the miss penalty is higher)
+		   
+	11. single loop miss
+		in general, if a cache has a block size of B bytes, then a stride-k reference pattern 
+		(where k is expressed in words) results in an average of min[1, (word size × k)/B] misses per single 
+		loop iteration
+		
+	12. prefetching
+		hardware prefetching may work better in program with good spatial locality 
+		
+Association memory
+	A conventional memory is an array can directly access, while association memory is an array of (key, value)
+	pairs need to match the key accessing (the matching work is completed in parallel)
+
+exploit locality in program
+	1. focus on the inner loops, where the bulk of the computations and memory accesses occur
+	2. improve the spatial locality in programs by reading data objects sequentially, 
+	   with stride 1, in the order they are storedin memory
+	3. improve the temporal locality in programs by using a data object as often as possible
