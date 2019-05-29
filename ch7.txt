@@ -1,0 +1,127 @@
+Executable and Linkable Format (ELF) object file
+	1. 	ELF header (head)
+			1. word size and byte ordering of the system that generated the file
+			2. the size of the ELF header
+			3. the object file type (e.g., relocatable, executable, or shared)
+			4. the machine type (e.g., x86-64)
+			5. the file offset of the section header table
+			6. the size and number of entries in the section header table
+	2. 	.text
+	3. 	.rodata
+	4. 	.data
+	5. 	.bss
+			1. uninitialized global and static C variables, along with any global or static variables 
+			   that are initialized to zero
+			2. at run time, these variables are allocated in memory with an initial value of zero
+			3. this section occupies no actual space in the object file
+	6 	.symtab (can be removed with 'strip' command)
+			a symbol table with information about functions and global variables that are defined 
+			and referenced in the program
+	7. 	.rel.text (relocation information is not needed in executable object files)
+			1. a list of locations in the .text section that will need to be modified
+			2. in general, any instruction that calls an external function or references a global variable 
+			   will need to be modified
+	8. 	.rel.data
+			1. relocation information for any global variables that are referenced or defined by the module
+			2. in general, any initialized global variable whose initial value is the address of a global
+			   variable or externally defined function will need to be modified
+	9. 	.debug
+			1. a debugging symbol table with entries for local variables and typedefs defined in the program, 
+			   global variables defined and referenced in the program, and the original C source file.
+			2. only present if the compiler driver is invoked with the -g option
+	10. 	.line
+			1. a mapping between line numbers in the original C source program and 
+			   machine code instructions in the .text section
+			2. only present if the compiler driver is invoked with the - g option
+	11. 	.strtab
+			1. a string table for the symbol tables in the .symtab and .debug sections and 
+			   for the section names in the section headers
+			2. a string table is a sequence of null-terminated character strings
+	12.	section header table (tail)
+			the locations and sizes of the various sections (with prefix '.' listed above)
+
+Symbol table (built by assemblers, using symbols exported by the compiler into the assembly-language)
+	1. kinds of sysmbols
+		1. global symbols that are defined by module m and that can be referenced by other modules
+		   (C functions and global variables that are defined in other modules)
+		2. global symbols that are referenced by module m but defined by some other module
+		   (C functions and global variables that are defined in other modules)
+		3. local symbols are defined and referenced exclusively by module m
+		   (static C functions and global variables that are defined with the static attribute)
+		   
+	2. contains an array of entries below
+		typedef struct 
+		{
+			int name; /* String table offset */
+			char type:4, /* Function or data (4 bits) */
+			     binding:4; /* Local or global (4 bits) */
+			char reserved; /* Unused */
+			short section; /* Section header index */
+			long value; /* Section offset from the beginning of the section where the object is defined
+			               or absolute address for executable object files*/
+			long size; /* Object size in bytes */
+		} Elf64_Symbol;
+		
+		NOTICE: some pseudosections don't have entries in section header table
+			1. ABS, symbols that should not be relocated
+			2. UNDEF, symbols that are referenced in this object module but defined elsewhere
+			3. COMMON (not .bss), uninitializeddata objects (weak symbols) that are not yet allocated
+			   (value field gives the alignment requirement, and size gives the minimum size)
+			   
+Symbol resolution
+	1. symbol resolution for references to local symbols is handled by compiler
+	2. the compiler encounters a symbol that is not defined in the current module, 
+	   it generates a linker symbol table entry, and leaves it for the linker to handle
+	   
+	3. at compile time, the compiler exports each global symbol to the assembler as either strong or weak, 
+	   and the assembler encodes this information implicitly in the symbol table of the relocatable object file.
+	4. functions and initialized global variables get strong symbols
+	5. uninitialized global variables get weak symbols.
+	6. linkers use the following rules for dealing with duplicate symbol names
+		1. multiple strong symbols with the same name are not allowed
+		2. given a strong symbol and multiple weak symbols with the same name, choose the strong symbol
+		3. given multiple weak symbols with the same name, choose any of the weak symbols
+	7. 'gcc -fno-common' triggers an error if it encounters 6.2 and 6.3
+
+Static lib [.a/archive (with a header that describes the size and location of each member object file)]
+	1. the linker copies only the object modules in the library that are referenced by the application program
+	
+	2. to create
+		ar rcs out.a src.o
+	   to use:
+	   		gcc -static xxx.o ./out.a
+	   	equivalently
+	   		gcc -static xxx.o -L. -lout
+	3.  the ordering of libraries and object files on the command line is significant. 
+	    If the library that defines a symbol appears on the command line before the object file 
+	    that references that symbol, then the reference will not be resolved and linking will fail
+	    (lib can be repeated on the command line if necessry)
+
+Relocation
+	1. merges all sections of the same type into a new aggregate section of the same type, and
+	   assigns run-time memory addresses to defined sections (including new sections) and symbols
+	2. modifies every symbol reference so that they point to the correct runtime addresses,
+	   which is supported by relocation entries (in .rel.text for code ,while in .rel.data for data)
+	   
+	3. whenever the assembler encounters a reference to an object whose ultimate location is unknown, 
+	   it generates a relocation entry that tells the linker how to modify the reference when it merges 
+	   the object file into an executable
+	4. the format of ELF relocation entry
+		typedef struct 
+		{
+			long offset; /* Section offset of the reference to relocate */
+			long type:32, /* Relocation type, 
+					 such as 
+					 	R_X86_64_PC32, relocate a reference that uses a 32-bit 
+					 	address relative to PC, 
+					 and 
+					 	R_X86_64_32, relocate a reference that uses a 32-bit absolute
+					 	address */
+			     symbol:32; /* Symbol table index */
+			long addend; /* Signed constant part of relocation expression */
+		} Elf64_Rela;
+		
+		NOTICE: R_X86_64_PC32 and R_X86_64_32 support the x86-64 small code model: the total size of the 
+		code and data in the executable object file is smaller than 2 GB. The small code model is the default 
+		for gcc . Programs larger than 2 GB can be compiled using the -mcmodel=medium (medium code model) and 
+		-mcmodel=large (large code model) flags
