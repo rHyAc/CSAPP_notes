@@ -113,15 +113,99 @@ Relocation
 			long type:32, /* Relocation type, 
 					 such as 
 					 	R_X86_64_PC32, relocate a reference that uses a 32-bit 
-					 	address relative to PC, 
+					 	address relative to PC
+						[rel_addr = (unsigned)rel_addr_of_defined(this->symbol) + this->addend 
+								- (rel_addr(TEXT_SECTION) + this->offset)]
 					 and 
 					 	R_X86_64_32, relocate a reference that uses a 32-bit absolute
-					 	address */
-			     symbol:32; /* Symbol table index */
-			long addend; /* Signed constant part of relocation expression */
+					 	address 
+						[rel_addr = (unsigned)rel_addr_of_defined(this->symbol) + this->addend]
+					*/
+			     symbol:32; /* symbol table index */
+			long addend; /* Signed constant part of relocation expression to get the instruction
+					address next to the one where the symbol is invoked when using relative
+					address, such as addend = -4 when this->type is R_X86_64_PC32, but 
+					addend = 0 when this->type is R_X86_64_32 */
 		} Elf64_Rela;
 		
 		NOTICE: R_X86_64_PC32 and R_X86_64_32 support the x86-64 small code model: the total size of the 
 		code and data in the executable object file is smaller than 2 GB. The small code model is the default 
 		for gcc . Programs larger than 2 GB can be compiled using the -mcmodel=medium (medium code model) and 
 		-mcmodel=large (large code model) flags
+
+ELF executable file
+	1.	ELF header
+			also includes the program's entry point which is the address of the first instruction to 
+			execute when the program runs
+	2.	Segment header table
+			1. maps contiguous file sections to run-time memory segments
+			2. a segment may contain many sections
+	3.	.init
+			defines a function _init, that will be called by the program's initialization code
+	4.	.tex11t
+	5.	.rodata
+	6.	.data
+	7.	.bss
+	8.	.symtab
+	9.	.debug
+	10.	.line
+	11.	.strtab
+	12.	Section header table
+	
+	1-5 is read-only memory segment, 6-7 is read/write memory segment, 8-12 are not loaded into memory
+
+Loading
+			|-------------------------| 
+			| kernel memory		  | memory invisible to user mode
+	2^48 - 1	|-------------------------|
+			| User stack		  |
+			|-------------------------|
+			|          ↓		  |
+			|			  |
+			| memory-mapped region 	  |
+			| for shared libraries	  |
+			|			  |
+			|          ↑		  |
+			|-------------------------|
+			| run-time heap		  |
+			|-------------------------|
+			| read/write segment	  |
+			| (.data, .bss)		  |
+			|-------------------------|
+			| read-only code segment  |
+			| (.inti, .text, .rodata) |
+	0x400000	|-------------------------| 
+	(default)	|			  |
+			|			  |
+	0		|-------------------------|
+	
+		 NOTICE: there is a gap between the code and data segments due to the alignment.  Also, the linker 
+		 	 uses address-space layout randomization (ASLR, Section 3.10.4 ) when it assigns runtime 
+			 addresses to the stack, shared library, and heap segments
+	
+	1. loader creates a memory image guided by the program header table, it copies chunks of the executable 
+	   object file into the code and data segments
+	2. the loader jumps to the program's entry point, which is always the address of the _start function. 
+	   This function is defined in the system object file crt1.o and is the same for all C programs
+	3. the _start function calls the system startup function, __libc_start_main , which is defined in libc.so. 
+	   It initializes the execution environment, calls the user-level main function, handles its return value,
+	   and if necessary returns control to the kernel
+
+Shared lib (.so)
+	
+	2. to create
+		gcc -shared -fpic -o out.so src.c
+	3. to use
+		gcc main.c ./out.so
+		
+	4. link when an application is loaded 
+		1. when the loader loads and runs the executable main.out , it loads the partially linked executable
+	   	   main.out
+		2. main.out contains a .interp section, which contains the path name of the dynamic linker, 
+		   which is itself a shared object (e.g., ld-linux.so on Linux systems)
+		3. the loader loads and runs the dynamic linker
+		4. the dynamic linker then finishes the linking task by performing the following relocations:
+			1. relocating the text and data of out.so into some memory segment
+			2. relocating any references in main.out to symbols defined by out.so
+	
+	5. link when the application is running
