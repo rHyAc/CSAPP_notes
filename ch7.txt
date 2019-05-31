@@ -87,11 +87,11 @@ Static lib [.a/archive (with a header that describes the size and location of ea
 	1. the linker copies only the object modules in the library that are referenced by the application program
 	
 	2. to create
-		ar rcs out.a src.c
+		ar rcs libout.a src.o
 	   to use:
-	   		gcc -static xxx.o out.a
+	   		gcc -static xxx.c libout.a
 	   	equivalently
-	   		gcc -static xxx.o -L. -lout
+	   		gcc -static xxx.c -L. -lout
 	3.  the ordering of libraries and object files on the command line is significant. 
 	    If the library that defines a symbol appears on the command line before the object file 
 	    that references that symbol, then the reference will not be resolved and linking will fail
@@ -195,11 +195,11 @@ Loading
 Shared lib (.so)
 	
 	1. to create
-		gcc -shared -fpic -o out.so src.c
+		gcc -shared -fpic -o libout.so src.c
 		
 	2. link when an application is loaded 
 		1. to use
-			gcc -o main.out main.c ./out.so
+			gcc -o main.out main.c ./libout.so
 	
 		2. mechanism
 			1. when the loader loads and runs the executable main.out , it loads the partially linked executable
@@ -208,8 +208,8 @@ Shared lib (.so)
 		   	   which is itself a shared object (e.g., ld-linux.so on Linux systems)
 			3. the loader loads and runs the dynamic linker
 			4. the dynamic linker then finishes the linking task by performing the following relocations:
-				1. relocating the text and data of out.so into some memory segment
-				2. relocating any references in main.out to symbols defined by out.so
+				1. relocating the text and data of libout.so into some memory segment
+				2. relocating any references in main.out to symbols defined by libout.so
 	
 	3. link when the application is running
 		1. to use
@@ -235,7 +235,7 @@ Shared lib (.so)
 							RTLD_GLOBAL: either of above flags can be ORed with this flag
 				   	returns: pointer to handle if OK, NULL on error
 				*/
-				void * handle = dlopen("./out.so", RTLD_LAZY);
+				void * handle = dlopen("./libout.so", RTLD_LAZY);
 				if (!handle)
 				{
 					fprintf(stderr, "%sn", dlerror());
@@ -368,8 +368,8 @@ Lib interpositioning
 		}
 		
 		
-		> gcc -shared -fpic -o out.so malloc.c -ldl
-		> LD_PRELOAD="./out.so" ./main.out
+		> gcc -shared -fpic -o libout.so malloc.c -ldl
+		> LD_PRELOAD="./libout.so" ./main.out
 		 when load and execute a program, the dynamic linker ( LD-LINUX.SO ) will search the libraries 
 		 in the path indicated by LD_PRELOAD, the environment variable set to a list of shared library
 		 pathname, before any other shared libraries
