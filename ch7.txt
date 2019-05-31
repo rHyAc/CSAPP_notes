@@ -87,9 +87,9 @@ Static lib [.a/archive (with a header that describes the size and location of ea
 	1. the linker copies only the object modules in the library that are referenced by the application program
 	
 	2. to create
-		ar rcs out.a src.o
+		ar rcs out.a src.c
 	   to use:
-	   		gcc -static xxx.o ./out.a
+	   		gcc -static xxx.o out.a
 	   	equivalently
 	   		gcc -static xxx.o -L. -lout
 	3.  the ordering of libraries and object files on the command line is significant. 
@@ -159,14 +159,14 @@ Loading
 			| kernel memory		  | memory invisible to user mode
 	2^48 - 1	|-------------------------|
 			| User stack		  |
-			|-------------------------|
+			|-------------------------| ← %rsp
 			|          ↓		  |
 			|			  |
 			| memory-mapped region 	  |
 			| for shared libraries	  |
 			|			  |
 			|          ↑		  |
-			|-------------------------|
+			|-------------------------| ← brk 
 			| run-time heap		  |
 			|-------------------------|
 			| read/write segment	  |
@@ -179,9 +179,10 @@ Loading
 			|			  |
 	0		|-------------------------|
 	
-		 NOTICE: there is a gap between the code and data segments due to the alignment.  Also, the linker 
-		 	 uses address-space layout randomization (ASLR, Section 3.10.4 ) when it assigns runtime 
-			 addresses to the stack, shared library, and heap segments
+		 NOTICE: 
+		 	1. there is a gap between the code and data segments due to the alignment.  
+			2. the linker uses address-space layout randomization (ASLR) when it 
+			   assigns runtime addresses to the stack, shared library, and heap segments
 	
 	1. loader creates a memory image guided by the program header table, it copies chunks of the executable 
 	   object file into the code and data segments
@@ -193,19 +194,194 @@ Loading
 
 Shared lib (.so)
 	
-	2. to create
+	1. to create
 		gcc -shared -fpic -o out.so src.c
-	3. to use
-		gcc main.c ./out.so
 		
-	4. link when an application is loaded 
-		1. when the loader loads and runs the executable main.out , it loads the partially linked executable
-	   	   main.out
-		2. main.out contains a .interp section, which contains the path name of the dynamic linker, 
-		   which is itself a shared object (e.g., ld-linux.so on Linux systems)
-		3. the loader loads and runs the dynamic linker
-		4. the dynamic linker then finishes the linking task by performing the following relocations:
-			1. relocating the text and data of out.so into some memory segment
-			2. relocating any references in main.out to symbols defined by out.so
+	2. link when an application is loaded 
+		1. to use
+			gcc -o main.out main.c ./out.so
 	
-	5. link when the application is running
+		2. mechanism
+			1. when the loader loads and runs the executable main.out , it loads the partially linked executable
+	   	   	   main.out
+			2. main.out contains a .interp section, which contains the path name of the dynamic linker, 
+		   	   which is itself a shared object (e.g., ld-linux.so on Linux systems)
+			3. the loader loads and runs the dynamic linker
+			4. the dynamic linker then finishes the linking task by performing the following relocations:
+				1. relocating the text and data of out.so into some memory segment
+				2. relocating any references in main.out to symbols defined by out.so
+	
+	3. link when the application is running
+		1. to use
+			gcc -rdynamic dll.c -ldl
+			
+			/* ------------------- dll.c ------------------- */
+			#include <stdio.h>
+			#include <stdlib.h>
+			/* for dlopen, dlsym, dlclose */
+			#include <dlfcn.h>
+			
+			int main(void)
+			{
+				/* void * dlopen(const char * filename, int flag);
+					args:
+						filename: shared lib where the external symbols are resolved using 
+							  libs previously opened with the RTLD_GLOBAL flag
+						flag:
+							RTLD_NOW: resolve references to external symbols immediately
+								  (before the function return)
+							RTLD_LAZY: defer symbol resolution until code from the library 
+								   is executed
+							RTLD_GLOBAL: either of above flags can be ORed with this flag
+				   	returns: pointer to handle if OK, NULL on error
+				*/
+				void * handle = dlopen("./out.so", RTLD_LAZY);
+				if (!handle)
+				{
+					fprintf(stderr, "%sn", dlerror());
+					exit(1);
+				}
+				
+				/* void *dlsym(void *handle, char *symbol);
+					args:
+						handle: a previously opened shared library
+						symbol: a symbol name 
+					return: pointer to symbol if OK, NULL on erro
+				*/
+				void (* func_sym)(void) = (void (*)(void))dlsym(handle, "func_name")
+				if (!func_sym)
+				{
+					fprintf(stderr, "%sn", dlerror());
+					exit(1);
+				}
+				
+				/* call the function func_sym() */
+				func_sym();
+				
+				/* int dlclose (void * handle);
+					args:
+						handle: a handle to a previously opened shared library
+					return: 0 if OK, -1 on error
+				*/
+				if (dlclose(handle) < 0)
+				{
+					fprintf(stderr, "%sn", dlerror());
+					exit(1);
+				}	
+				
+				return 0;
+			}
+
+Position-Independent code
+	1. the code segments of shared modules can be loaded anywhere in memory without having to 
+	   be modified by the linker
+	   
+	2. resolve internal symbols
+		references to symbols in the same executable object module require no special treatment to be PIC. 
+	   	These references can be compiled using PC-relative addressing and relocated by the static linker 
+	   	when it builds the object file
+	3. resolve external symbols
+		variable
+			1. the global offset table (GOT) is the data segment which an 8-byte entry 
+			   for each external data object referenced by the object module. 
+			2. the compiler generates a relocation record for each entry in the GOT. At load time, 
+			   the dynamic linker relocates each GOT entry so that it contains the absolute address 
+			   of the object
+		function
+				GOT in data segment
+				--------------------------------------		  --------------------------------------
+				| GOT[0]: addr of .dynamic	     |		  | GOT[0]: addr of .dynamic	       |
+				| GOT[1]: addr of reloc entries	     |		  | GOT[1]: addr of reloc entries      |
+				| GOT[2]: addr of dynamic linker     |	-------→  | GOT[2]: addr of dynamic linker     |
+				|	  in the ld-linux.so module  |		  |	    in the ld-linux.so module  |
+				| GOT[3]: 0x4005b6 # sys startup     |		  | GOT[3]: 0x4005b6 # sys startup     |
+			III	| GOT[4]: 0x4006c6 # func()	     |		  | GOT[4]: &func()		       |    VI
+				--------------------------------------		  --------------------------------------
+			
+				procedure linkage table (PLT) (16-byte each entry)
+				in code segment
+				--------------------------------------
+				| # PLT[0]: call dynamic linker	     |
+			V	| 4005a0: push	*GOT[1]  	     |
+				| 4005a6: jupq	*GOT[2]		     |
+				| # PLT[1]: invoke __libc_start_main |
+				| ...				     |
+				| # PLT[2]: call func()		     |
+			II	| 4005c0: jmpq	*GOT[4]		     |
+			IV	| 4005c6: pushq	$0x1		     |
+				| 4005cb: jmpq	4005a0		     |
+				--------------------------------------
+			
+			I 	call into PLT[2] instead of calling func() directly
+
+Lib interpositioning
+	1. compile-time
+		/* --------------- malloc.h --------------- */
+		#define malloc(size) mymalloc(size)
+		#define free(ptr) myfree(ptr)
+		
+		void * mymalloc(size_t size);
+		void myfree(void * ptr);
+		
+		/* --------------- malloc.c --------------- */
+		# include <stdlib.h>
+		# include "malloc.h"
+		
+		void * mymalloc(size_t size) { return malloc(size); }
+		void myfree(void * ptr) { free(ptr); }
+		
+	2. link-time
+		/* --------------- malloc.c --------------- */
+		#include <stdlib.h>
+		
+		void * __real_malloc(size_t size);
+		void __real_free(void * ptr);
+		
+		void * __wrap_malloc(size_t size) { return __real_malloc(size); }
+		void __wrap_free(void * ptr) { __real_free(ptr); }
+		
+		
+		> gcc -Wl,--wrap,malloc -Wl,--wrap,free -o main.out main.c malloc.c
+		the -Wl flag passes following option to the linker where each comma is replaced with a space
+		
+	3. run-time
+		/* --------------- malloc.c --------------- */
+		#include <stdlib.h>
+		#include <dlfcn.h>
+		
+		void * malloc(size_t size)
+		{
+			/* get addr of libc malloc */
+			void * (*mallocp)(size_t) = dlsym(RTLD_NEXT, "malloc");
+			/* call libc malloc */
+			if (!mallocp) { exit(1); }
+			return mallocp(size);
+		}
+		
+		void free(void * ptr)
+		{
+			/* get addr of libc free */
+			void (*freep)(void *) = dlsym(RTLD_NEXT, "free");
+			if (!free) { exit(1); }
+			/* call libc free */
+			freep(ptr);
+		}
+		
+		
+		> gcc -shared -fpic -o out.so malloc.c -ldl
+		> LD_PRELOAD="./out.so" ./main.out
+		 when load and execute a program, the dynamic linker ( LD-LINUX.SO ) will search the libraries 
+		 in the path indicated by LD_PRELOAD, the environment variable set to a list of shared library
+		 pathname, before any other shared libraries
+
+command tools for manipulating object files
+	1. ar: creates static libraries, and inserts, deletes, lists, and extracts members.
+	2. strings: lists all of the printable strings contained in an object file.
+	3. strip: deletes symbol table information from an object file.
+	4. nm: lists the symbols defined in the symbol table of an object file.
+	5. size: lists the names and sizes of the sections in an object file.
+	6. readelf: displays the complete structure of an object file, including all of the information encoded
+		    in the ELF header. Subsumes the functionality of 'size' and 'nm'.
+	7. objdump: the mother of all binary tools. Can display all of the information in an object file. 
+		    Its most useful function is disassembling the binary instructions in the .text section.
+	8. ldd: lists the shared libraries that an executable needs at run time
