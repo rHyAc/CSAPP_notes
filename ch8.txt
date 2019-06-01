@@ -1,0 +1,139 @@
+
+Exception handle
+	push some additional processor state onto the kernel's stack and then run the exceptional handlers
+	in kernel mode
+
+Classes of exceptions
+
+	----------------------------------------------------------------------------------------
+	| class	    | cause			    | return behavior			       |
+	________________________________________________________________________________________
+	| interrupt | signal from I/O		    | return to next instruction	       |
+	|-------------------------------------------|------------------------------------------|
+	| trap	    | intention exception	    | return to next instruction	       |
+	|-------------------------------------------|------------------------------------------|
+	| fault	    | potentially recoverable error | reuturn to current instruction if        |
+	|	    |				    | succeeding in correcting error condition.|
+	|	    |				    | Otherwise, abort			       |
+	|--------------------------------------------------------------------------------------|
+	| abort	    | nonrecoverable error	    | terminate the process causing the errors |
+	----------------------------------------------------------------------------------------
+
+Exceptions in Linux/x86_64 
+
+	-------------------------------------------------------------------------------------
+	| exception number | description			    	| exception class   |		       
+	_____________________________________________________________________________________
+	| 0 		   | divide error		    		| fault	            |
+	|		   | (divide by zero or when the result 	|		    |
+	|		   |  of a divide instruction is too big 	|		    |
+	|		   |  for the destination operand)		|		    |
+	|-----------------------------------------------------------------------------------|
+	| 13		   | general protection fault	    		| fault	            |
+	|		   | (references virtual memory illegally) 	|		    |
+	|-----------------------------------------------------------------------------------|
+	| 14		   | page fault 	   	 		| fault		    |
+	|-----------------------------------------------------------------------------------|
+	| 18		   | machine check	    			| abort		    |
+	|		   | (fatal hardware error during the 		|		    |
+	|		   | execution of the faulting instruction) 	|		    |
+	|-----------------------------------------------------------------------------------|
+	| 32 - 255 	   | OS-defined exceptions 			| interrupt or trap |
+	-------------------------------------------------------------------------------------
+	
+Linux/x86_64 system call
+
+	-----------------------------------------------------------------------------------
+	| number | name	 | description   	| number | name   | description 	  |	       
+	___________________________________________________________________________________
+	| 0 	 | read	 |  read file		| 33 	 | pause  | suspend process until |
+	|	 |	 |			|	 |	  | signal arrives	  |
+	|---------------------------------------------------------------------------------|
+	| 1	 | write | write file       	| 37 	 | alarm  | schedule delivery of  |
+	|	 |	 |			|	 |	  | alarm signal	  |
+	|---------------------------------------------------------------------------------|
+	| 2	 | open	 | open file	    	| 39 	 | getpid | get process ID	  |
+	|---------------------------------------------------------------------------------|
+	| 3	 | close | close file	  	| 57 	 | fork   | create process	  |
+	|---------------------------------------------------------------------------------|
+	| 4 	 | stat	 | get info about file  | 59 	 | execve | execute a program	  |
+	----------------------------------------------------------------------------------|
+	| 9 	 | mmap	 | reset the top 	| 60 	 | _exit  | terminate process	  |
+	----------------------------------------------------------------------------------|
+	| 12 	 | brk 	 | interrupt or trap of | 61	 | wait4  | wait for a process	  |
+	|	 |	 | the heap 		|	 |	  | to terminate	  |
+	----------------------------------------------------------------------------------|
+	| 32 	 | dup2  | copy file descriptor | 62 	 | kill   | send signal to a	  |
+	|	 |	 |			|	 |	  | process		  |
+	-----------------------------------------------------------------------------------
+	
+	1. for the syscall insturction, %rax contains the syscall number with up to six arguments 
+	   in %rdi, %rsi,%rdx, %r10, %r8, and %r9. 
+	2. on return from the system call, registers %rcx and %r11 are destroyed, and %rax contains 
+	   the return value
+	3. a negative return value between -4,095 and -1 indicates an error corresponding to negative errno
+	
+Kernel mode
+	1. processors typically provide this capability with a mode bit in some control register that 
+	   characterizes the privileges that the process currently enjoys
+	2. a process running in kernel mode can execute any instruction in the instruction set and
+	   access any memory location in the system
+	   
+	3. the /proc filesystem exports the contents of many kernel data structures as a hierarchy of 
+	   text files that can be read by user programs
+	4.  a /sys filesystem, which exports additional low-level information about system buses and devices
+
+Context switches
+	process A → process B
+		1. before the switch, the kernel is executing instructions in user mode on behalf of process A 
+		   (i.e., there is no separate kernel process). 
+		2. during the first part of the switch, the kernel is executing instructions in kernel mode on 
+		   behalf of process A. 
+		3. then at some point it begins executing instructions (still in kernel mode) on behalf ofprocess B
+		4. and after the switch, the kernel is executing instructions in user mode on behalf of process B
+
+Creating and terminating processes
+	1. #include <stdlib.h>
+	   /* terminates the process with an exit status of status */
+	   void exit(int status); 
+	   
+	2. #include <unistd.h>
+	   /* returns: 0 to child, PID of child to parent, -1 on error */
+	   pid_t fork(void);
+	   
+	   NOTICE: the child also gets identical copies of any of the parent's open file descriptors, 
+	           which means the child can read and write any files that were open in theparent 
+		   when it called fork 
+
+Reaping child processes
+	When a parent process terminates, the kernel arranges for the process never terminating whose PID is 1 to 
+	become the adopted parent of any orphaned children so as to reap them after they terminate
+
+	#include <sys/wait.h>
+	/* suspends execution of the calling thread until a child specified by pid argument has changed state.  
+	   By default(option = 0), waitpid() waits only for terminated children
+	   	args
+			pid
+				 -1, meaning wait for any child process
+				 > 0, meaning wait for the child whose process ID is equal to the value of pid
+			wstatus
+				if wstatus is not NULL, store status information in the int to which it points.
+				The int can be inspected with the macros defined in the head file
+			option
+				1. 0 (default)
+				2. WNOHANG, return immediately if no child has exited
+				3. WUNTRACED, also return if a child has stopped
+				4. WCONTINUED, also return if a stopped child has been resumed by delivery of SIGCONT
+				5. OR some of them
+		return 
+			1. on success, returns the process ID of the child whose state has changed
+			2. if WNOHANG was specified and one or more child(ren) specified by pid exist, but have not yet
+			   changed state, then 0 is returned
+			3. on error, return -1. 
+		errors
+			if the calling process has no children, then sets errno to ECHILD
+			If the waitpid function was interrupted by a signal, then sets errno to EINTR
+	*/
+	pid_t waitpid(pid_t pid, int *wstatus, int options);
+	/* equivalent to waitpid(-1, &wstatus, 0); */
+	pid_t wait(int *wstatus);
