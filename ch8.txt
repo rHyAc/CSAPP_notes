@@ -137,7 +137,7 @@ Reaping child processes
 			3. on error, return -1. 
 		errors
 			if the calling process has no children, then sets errno to ECHILD
-			f the waitpid function was interrupted by a signal, then sets errno to EINTR
+			if the waitpid function was interrupted by a signal, then sets errno to EINTR
 	*/
 	pid_t waitpid(pid_t pid, int * wstatus, int options);
 	
@@ -351,8 +351,13 @@ Signals
 		*/
 		sighandler_t signal(int signum, sighandler_t handler);
 		
+		/* allows users to clearly specify the signal-handling semantics they want
+			returns: 0 if OK, -1 on error
+		*/
+		int sigaction(int signum, struct sigaction * act, struct sigaction * oldact);
+		
 	4. conservative handler function suggestion (signal handlers run concurrently with the main program 
-		                                     and with each other)
+		                                     and with other types' one)
 		1. call only async-signal-safe functions which is either reentrant or 
 		   cannot be interrupted by a signal handler in your handlers. 
 			   
@@ -456,7 +461,7 @@ Signals
 		/* initializes set to the empty set
 			returns: 0 if OK, -1 on error
 		*/
-		int sigemptyset(sigset_t *set);
+		int sigemptyset(sigset_t * set);
 		
 		/*  adds every signal to set
 			returns: 0 if OK, -1 on error
@@ -466,17 +471,24 @@ Signals
 		/* adds signum to set
 			returns: 0 if OK, -1 on error
 		*/
-		int sigaddset(sigset_t *set, int signum);
+		int sigaddset(sigset_t * set, int signum);
 		
 		/* deletes signum from set
 			returns: 0 if OK, -1 on error
 		*/
-		int sigdelset(sigset_t *set, int signum);
+		int sigdelset(sigset_t * set, int signum);
 		
 		/* returns: 1 if member, 0 if not, -1 on error */
-		int sigismember(const sigset_t *set, int signum);
+		int sigismember(const sigset_t * set, int signum);
 		
-
+		/* replaces the current blocked set with mask and then suspends the process until the receipt 
+		   of a signal whose action is either to run a handler or to terminate the process
+			return:
+				1. if the action is to terminate, then the process terminates without returning
+				2. if the action is to run a handler, then sigsuspend returns after the handler 
+				   returns -1, restoring the blocked set to its state when sigsuspend was called
+		*/
+		int sigsuspend(const sigset_t * mask);
 
 Process groups
 	#include <unistd.h>
@@ -494,3 +506,38 @@ Process groups
 	int setpgid(pid_t pid, pid_t pgid);
 	
 	The shell creates a separate process group for each job
+
+Nonlocal jumping
+	#include <setjmp.h>
+	
+	/* The setjmp() function saves various information about the calling environment 
+	   (typically, the stack pointer, the instruction pointer,  possibly  the  values  of other registers 
+	   and the signal mask) in the buffer env for later use by longjmp()
+	*/
+	int setjmp(jmp_buf env);
+	/* NOTICE:　
+		1. if the function which called setjmp() returns before longjmp() is called, the behavior is undefined
+		2. if some data structures were allocated in the intermediate function calls with the intention 
+	           to deallocate them at the end of the function, the deallocation code gets skipped, 
+		   thus creating a memory leak
+		3. longjmp() and siglongjmp() to the list of async-signal-safe functions. However, if these functions
+		   are called from a signal handler that interrupted a call to a non-async-signal-safe function the
+		   behavior is undefined if the program subsequently makes a call to a non-async-signal-safe function. 
+		   Therefore, any signal whose handler performs a long jump must be blocked during every call to 
+		   a non-async-signal-safe function and no non-async-signal-safe functions are called after 
+		   returning from the initial call to main()
+	*/
+	void longjmp(jmp_buf env, int retval);
+
+	/* to ensure signal masks (including the pending and blocked signal vectors) are saved and restored, 
+	   using following function
+	*/
+	int sigsetjmp(sigjmp_buf env, int savesigs);
+	void siglongjmp(sigjmp_buf env, int retval);
+
+Tools for manipulating processes
+	1. strace, prints a trace of each system call invoked by a running program and its children
+	2. ps, lists processes (including zombies) currently in the system
+	3. top, prints information about the resource usage of current processes
+	4. pmap, displays the memory map of a process
+	
