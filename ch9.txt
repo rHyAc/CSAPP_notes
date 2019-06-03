@@ -1,0 +1,11 @@
+1. the address translation hardware reads the page table each time it converts a virtual address to a physical address. 
+   The operating system is responsible for maintaining the contents of the page table and transferring pages 
+   back and forth between disk and DRAM (if missing, MMU triggers an exception, which transfers control in the CPU to 
+   a page fault exception handler in the operating system kernel)
+
+2. the strategy of waiting until the last moment to swap in a page, when a miss occurs, is known as demand paging 
+   that is used in modern systems but not page prefetching
+   
+3. programs will tend to work on a smaller set of active pages known as the working set or resident set
+
+4. permission bits can be added to each page table entry (PTE)
