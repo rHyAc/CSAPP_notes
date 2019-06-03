@@ -181,7 +181,7 @@ Loading and running programs
 			pointer to name if it exists
 			NULL if no match
 	*/
-	char *getenv(const char *name);
+	char * getenv(const char * name);
 	
 	/* 1. if the environment array contains a string of the form name=oldvalue, then unsetenv deletes 
 	      it and setenv replaces oldvalue with newvalue, but only if overwrite is nonzero
@@ -190,7 +190,7 @@ Loading and running programs
 			0 on success
 			-1 on error
 	*/
-	int setenv(const char * name, const char *newvalue, int overwrite);
+	int setenv(const char * name, const char * newvalue, int overwrite);
 	
 	void unsetenv(const char * name);
 
@@ -466,7 +466,7 @@ Signals
 		/*  adds every signal to set
 			returns: 0 if OK, -1 on error
 		*/
-		int sigfillset(sigset_t *set);
+		int sigfillset(sigset_t * set);
 		
 		/* adds signum to set
 			returns: 0 if OK, -1 on error
