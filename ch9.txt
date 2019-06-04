@@ -9,3 +9,108 @@
 3. programs will tend to work on a smaller set of active pages known as the working set or resident set
 
 4. permission bits can be added to each page table entry (PTE)
+
+5. MMU is typicallly located in core, but memory controller is shared by all cores
+
+Multi-level page tables
+	1. only the level 1 table needs to be in main memory at all times
+	2. each virtual page number (VPN) i, 1 ≤ i ≤ k, is an index into a page table at level i. 
+	3. each PTE in a level k table contains either the physical page number (PPN) of some physical page 
+	   or the address of a disk block
+	4. TLB caches PTEs from the page tables at the different levels
+
+Linux VM
+	1. kernel maintains a distinct task structure ( task_struct in the source code) for each process in
+	   the system
+	2. one of the entries (mm) in the task structure points to an mm_struct that characterizes the current state of 
+	   the virtual memory
+	3. pgd, a field in mm_struct pointing to the base of the level 1 table (the page global directory), storesed
+	   in the page-directory base address register (PDBR)/the CR3 control register.
+	4. mmap , another field in points, points to a list of vm_area_structs, each of which characterizes an area (segment)
+	   of the current virtual address space, containing the fields:
+	   	1. vm_start, points to the beginning of the area
+		2. vm_end, points to the end of the area
+		3. vm_prot, describes the read/write permissions for all of the pages contained in the area
+		4. vm_flags, describes (among other things) whether the pages in the area are shared with 
+		   other processes or private to this process
+		5. vm_next, points to the next area struct in the list.
+
+Page fault exception handling
+	1. examine legality of the virtual address, by comparing it with the vm_start and vm_end in each area struct
+	   (segmentation fault if illegal)
+	2. examine legality of access (readable, writable, executable, kernel privilaged) 
+	   (a protection exception if illegal)
+	3. selecting a victim page, swapping out the victim page if it is dirty, swapping in the new page, 
+	   and updating the page table
+	4. the CPU restarts the faulting instruction
+
+Memory mapping
+	1. initialization
+		memory mapping, virtual memory areas are associated with two types of objects on disk
+			1. regular disk file
+			2. anonymous file
+				created by the kernel, contains all binary zeros. When paging in, the kernel 
+				overwrites the victim page with binary zeros without transfering data from
+				disk to memory. pages in areas that are mapped to anonymous files are sometimes
+				called demand-zero pages (bss, heap, stack)
+	2. virtual pages are swapped back and forth between a special swap file (wap space, swap area)maintained 
+	   by the kernel. The swap space bounds the total amount of virtual pages that can be allocated by the 
+	   currently running processes
+	   
+	3. processes can map the same object as a private object into their virtual memories sharing the same
+	   physical copy of the object.
+	4. copy-on-write (used by private objects)
+	   	for each process that maps the private object, the page table entries for the corresponding 
+		private area are flagged as read-only, and the area struct is flagged as private copyon-write. 
+		So long as neither process attempts to write to its respective private area, they continue to
+		share a single copy of the object in physical memory. However, as soon as a process attempts to 
+		write to some page in the private area, the write triggers a protection fault.When the fault handler
+		notices that the protection exception was caused by the process trying to write to a page in a private 
+		copy-onwrite area, it creates a new copy of the page in physical memory, updates the page table entry 
+		to point to the new copy, and then restores write permissions to the page. When the fault handler 
+		returns, the CPU re-executes the write
+		
+	
+	#include <sys/mman.h>
+	
+	/* the mmap function asks the kernel to create a new virtual memory area to map a contiguous chunk 
+	   of the object
+	   	args
+			starts, a hint at the starting address in virtual memory for the mapping
+			length, length bytes
+			prot, contains bits describe the access permissions 
+				PROT_EXEC, pages in the area consist of instructions that may be executed by the CPU
+				PROT_READ, pages in the area may be read.
+				PROT_WRITE, pages in the area may be written.
+				PROT_NONE, pages in the area cannot be accessed.
+			flags, consists of bits that describe the type of the mapped object
+				MAP_ANON, anonymous object
+				MAP_PRIVATE, private copy-on-write object
+				MAP_SHARED, shared object
+			offset, offset bytes from the beginning of the file
+		returns: pointer to mapped area if OK, MAP_FAILED (–1) on error
+	*/
+	void *mmap(void * start, size_t length, int prot, int flags, int fd, off_t offset);
+	
+	/* returns: 0 if OK, –1 on error */
+	int munmap(void * start, size_t length);
+
+Dynamic memory allocation
+	#include <stdlib.h>
+	
+	/* return: pointer to allocated block if OK, NULL on error and sets errno
+	   NOTICE: in 32-bit mode, malloc returns a block whose address is always a multiple of 8. In 64-bit mode, 
+		   the address is always a multiple of 16
+	*/
+	void * malloc(size_t size);
+	
+	/* NOTICE: remember to deinit the freed-pointer */
+	void free(void * ptr)
+	
+	
+	#include <unistd.h>
+	
+	/* grows and shrink heap by adding incr to the kernel's brk pointer
+		returns: old brk pointer on success, –1 on error and sets errno to ENOMEM
+	*/
+	void * sbrk(intptr_t incr);
