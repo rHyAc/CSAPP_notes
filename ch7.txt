@@ -197,8 +197,8 @@ Loading
 				   This provides the kernel with a convenient way to access any specific location 
 				   in physical memory
 				   
-				4. shared virtual memory regions between processes are mapped to the same physical 
-				   regioons
+				4. virtual memory regions holding shared objects between processes are mapped to 
+				   the same physical regioons
 	
 	1. loader creates a memory image guided by the program header table, it copies chunks of the executable 
 	   object file into the code and data segments
