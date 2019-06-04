@@ -155,34 +155,50 @@ ELF executable file
 	1-5 is read-only memory segment, 6-7 is read/write memory segment, 8-12 are not loaded into memory
 
 Loading
-			|-------------------------| 
-			| kernel memory		  | memory invisible to user mode
-	2^48 - 1	|-------------------------|
-			| User stack		  |
-			|-------------------------| ← %rsp
-			|          ↓		  |
-			|			  |
-			| memory-mapped region 	  |
-			| for shared libraries	  |
-			|			  |
-			|          ↑		  |
-			|-------------------------| ← brk 
-			| run-time heap		  |
-			|-------------------------|
-			| read/write segment	  |
-			| (.data, .bss)		  |
-			|-------------------------|
-			| read-only code segment  |
-			| (.inti, .text, .rodata) |
-	0x400000	|-------------------------| 
-	(default)	|			  |
-			|			  |
-	0		|-------------------------|
+				|-------------------------|
+				| process-specific data	  |
+				| structure		  |
+				| (e.g., page tables, 	  |
+				|  task and mm structs,	  | ← different for each process ←
+				|  kernel stack)	  |  				   kernel 
+				|-------------------------|				   virtual
+				| physical mmeory	  | ←  				   memory
+				|-------------------------|   identical for each process ←
+				| kerenl code and data	  | ← 
+		2^48 - 1	|-------------------------|
+				| User stack		  |
+				|-------------------------| ← %rsp
+				|          ↓		  |
+				|			  |
+				| memory-mapped region 	  |
+				| for shared libraries	  |
+				|			  |
+				|          ↑		  |
+				|-------------------------| ← brk 
+				| run-time heap		  |
+				|-------------------------|
+				| read/write segment	  |
+				| (.data, .bss)		  |
+				|-------------------------|
+				| read-only code segment  |
+				| (.inti, .text, .rodata) |
+		0x400000	|-------------------------| 
+		(default)	|			  |
+				|			  |
+		0		|-------------------------|
 	
-		 NOTICE: 
-		 	1. there is a gap between the code and data segments due to the alignment.  
-			2. the linker uses address-space layout randomization (ASLR) when it 
-			   assigns runtime addresses to the stack, shared library, and heap segments
+			 NOTICE: 
+				1. there is a gap between the code and data segments due to the alignment.  
+				2. the linker uses address-space layout randomization (ASLR) when it 
+				   assigns runtime addresses to the stack, shared library, and heap segments
+				   
+				3. Linux maps a set of contiguous virtual pages (equal in size to the total
+				   amount of DRAM in the system) to the corresponding set of contiguous physical pages. 
+				   This provides the kernel with a convenient way to access any specific location 
+				   in physical memory
+				   
+				4. shared virtual memory regions between processes are mapped to the same physical 
+				   regioons
 	
 	1. loader creates a memory image guided by the program header table, it copies chunks of the executable 
 	   object file into the code and data segments
