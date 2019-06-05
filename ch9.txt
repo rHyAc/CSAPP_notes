@@ -55,7 +55,8 @@ Memory mapping
 				called demand-zero pages (bss, heap, stack)
 	2. virtual pages are swapped back and forth between a special swap file (wap space, swap area)maintained 
 	   by the kernel. The swap space bounds the total amount of virtual pages that can be allocated by the 
-	   currently running processes
+	   currently running processes (it means the total amount of virtual memory allocated by all of the
+	   processes in a system is limited by the amount of swap space on disk)
 	   
 	3. processes can map the same object as a private object into their virtual memories sharing the same
 	   physical copy of the object.
@@ -104,7 +105,7 @@ Dynamic memory allocation
 	*/
 	void * malloc(size_t size);
 	
-	/* NOTICE: remember to deinit the freed-pointer */
+	/* NOTICE: don't refer to the free pointer */
 	void free(void * ptr)
 	
 	
@@ -114,3 +115,56 @@ Dynamic memory allocation
 		returns: old brk pointer on success, –1 on error and sets errno to ENOMEM
 	*/
 	void * sbrk(intptr_t incr);
+
+	
+	free block organization
+		implicit free list
+			1. the free blocks are linked implicitly by the size fields in the headers which encodes
+			   the block size and whether the block is allocated or free 
+			  
+			2. simple but the cost of any operation that requires a search of the free list, such as placing 
+			   allocated blocks, will be linear in the total number of allocated and free blocks in the heap
+		
+	allocated block placement policy
+		1. first fit
+			1. searche the free list from the beginning and chooses the first free block that fits
+			
+			2. tend to retain large free blocks at the end of the list
+			3. but tend to leave "splinters" of small free blocks toward the beginning of the list, 
+			   which will increase the search time for larger blocks
+		2. next fit
+			1. the free list from where the previous search left off
+			
+			2. run significantly faster than first fit, especially if the front of the list becomes 
+			   littered with many small splinters
+			3. next fit suffers from worse memory utilization than first fit
+		3. best fit
+			1. examines every free block and chooses the free block with the smallest size that fits
+			
+			2. enjoy better memory utilization than either first fit or next fit
+			3. require an exhaustive search of the heap with simple free list organizations 
+			   such as the implicit free list
+
+	coalescing policy
+		1. immediate coalescing
+			1. performed in constant time 
+			2. thrashing where a block is repeatedly coalesced and then split soon thereafter
+		2. deferred coalescing (until some allocation request fails)
+			1. need to scan the entire heap, coalescing all free blocks
+			2. opted for by fast allocators typically
+		
+		3. boundary tags
+			1. with an implicit free list, can coalesce the next free block in constant time
+			2. to the previous one, it needs to search the entire list, remembering the location of 
+			   the previous block, until we reached the current block
+			   
+			3.  boundary tags, set a footer (replica of the header) at the end of each block, can
+			    avoid the issue. The optimized approach to increase memory utilization is to store the
+			    allocated/free bit of the previous block in current block, then allocated blocks 
+			    would not need footers (free blocks would still need)
+	
+		NOTICE: prologue block (the start of the list) and epilogue blocks (the start of the list) always
+			marked as allocatedare tricks that eliminate the edge conditions during coalescing
+		
+	NOTICE: when there is no sufficiently large block for allocating after coalescing, allocator will asks the 
+	        kernel for additional heap memory by calling the sbrk function
