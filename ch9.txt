@@ -118,12 +118,33 @@ Dynamic memory allocation
 
 	
 	free block organization
-		implicit free list
+		1. implicit free lists
 			1. the free blocks are linked implicitly by the size fields in the headers which encodes
 			   the block size and whether the block is allocated or free 
 			  
 			2. simple but the cost of any operation that requires a search of the free list, such as placing 
 			   allocated blocks, will be linear in the total number of allocated and free blocks in the heap
+		
+		2. explicit free lists
+			1.  organize the free blocks into some form of explicit data structure, such as including a pred 				    (predecessor) and succ (successor) pointer in each implicit free block
+			2. thus, free blocks must be large enough to contain all of the necessary pointers which results 
+			   in a larger minimum block size
+			
+			2. maintain the list in last-in first-out (LIFO) order by inserting newly free blocks at the
+			   beginning of the list makes freeing a block and coalescing be performed in constant time
+			3. maintain the list in address order makes freeing a block require a linear-time search
+			   to locate the appropriate predecessor and addressordered first fit enjoys better memory 
+			   utilization than LIFO-ordered first fit in which most recently used blocks first are inspected
+			   first
+		
+		3. segregated free lists
+			maintain multiple free lists, where each list holds blocks that are roughly the same size by
+			partitioning the set of all possible block sizes into equivalence classes called size classes,
+			ordering them by increasing size
+			   
+			1. simple segregated storage
+				
+			2. segregated fits
 		
 	allocated block placement policy
 		1. first fit
@@ -164,7 +185,7 @@ Dynamic memory allocation
 			    would not need footers (free blocks would still need)
 	
 		NOTICE: prologue block (the start of the list) and epilogue blocks (the start of the list) always
-			marked as allocatedare tricks that eliminate the edge conditions during coalescing
+			marked as allocated are tricks that eliminate the edge conditions during coalescing
 		
 	NOTICE: when there is no sufficiently large block for allocating after coalescing, allocator will asks the 
 	        kernel for additional heap memory by calling the sbrk function
