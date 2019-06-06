@@ -117,7 +117,7 @@ Dynamic memory allocation
 	void * sbrk(intptr_t incr);
 
 	
-	free block organization
+	1. free block organization
 		1. implicit free lists
 			1. the free blocks are linked implicitly by the size fields in the headers which encodes
 			   the block size and whether the block is allocated or free 
@@ -139,15 +139,54 @@ Dynamic memory allocation
 			   first
 		
 		3. segregated free lists
-			maintain multiple free lists, where each list holds blocks that are roughly the same size by
+			maintain multiple free lists, where each list holds blocks that are roughly the same size,
 			partitioning the set of all possible block sizes into equivalence classes called size classes,
 			ordering them by increasing size
 			   
 			1. simple segregated storage
+				1. the free list for each size class contains same-size blocks, each the size of the 
+				   largest element of the size class
+				2. use the entire free block to satify allocation requests, no Coalescing
+				3. when allocating a block, if the appropriate list is empty, the allocator requests 
+				   a fixed-size chunk of additional memory from the operating system, 
+				   divides the chunk into equal-size blocks, and links the blocks together to 
+				   form the new free list
+				4. to free a block, the allocator simply inserts the block at the front of 
+				   the appropriate free list
+				   
+				5. alocating (since each chunk has only same-size blocks, the size of an allocated block
+				   can be inferred from its address) and freeing blocks are constant-time operations
+				6. very little per-block memory overhead (no header, but a succ pointer)
+				7. susceptible to internal (never split) and external fragmentation (never coalesced)
 				
 			2. segregated fits
-		
-	allocated block placement policy
+				1. each free list is associated with a size class and is organized as some kind of 
+				   explicit or implicit list
+				2. first-fit search, split and insert the fragment in the appropriate free list
+				3. if cannot find a block that fits, search the free list for the next larger size class 
+				   until we find a block that fits. If none of the free lists yields 
+				   a block that fits, then request additional heap memory from the operating system, 
+				   allocate the block out of this new heap memory, and place the remainder 
+				   in the appropriate size class
+				4. to free a block, coalesce and place the result on the appropriate free list
+				
+				5. first-fit search of a segregated free list approximates a best-fit search 
+				   of the entire heap
+			
+			3. buddy systems
+				1. a special case of segregated fits where each size class is a power of 2
+				2. originally, there is one free block of size 2 words
+				3. requested block sizes are rounded up to the nearest power of 2
+				4. to allocate a block of size 2 ^ k, find the first available block of size 
+				   2 ^ j (k ≤ j ≤ m). If j = k, done. Otherwise, recursively split the block in half 
+				   until j = k. As we perform this splitting, each remaining half (known as a buddy)
+				   is placed on the appropriate free list
+				5. to free a block of size 2 , we continue coalescing with the free buddies
+				
+				6. fast searching and coalescing
+				7. significant internal fragmentation
+				   
+	2. allocated block placement policy
 		1. first fit
 			1. searche the free list from the beginning and chooses the first free block that fits
 			
@@ -167,7 +206,7 @@ Dynamic memory allocation
 			3. require an exhaustive search of the heap with simple free list organizations 
 			   such as the implicit free list
 
-	coalescing policy
+	3. coalescing policy
 		1. immediate coalescing
 			1. performed in constant time 
 			2. thrashing where a block is repeatedly coalesced and then split soon thereafter
