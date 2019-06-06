@@ -126,7 +126,8 @@ Dynamic memory allocation
 			   allocated blocks, will be linear in the total number of allocated and free blocks in the heap
 		
 		2. explicit free lists
-			1.  organize the free blocks into some form of explicit data structure, such as including a pred 				    (predecessor) and succ (successor) pointer in each implicit free block
+			1. organize the free blocks into some form of explicit data structure, such as including a pred
+			   (predecessor) and succ (successor) pointer in each implicit free block
 			2. thus, free blocks must be large enough to contain all of the necessary pointers which results 
 			   in a larger minimum block size
 			
