@@ -117,7 +117,7 @@ Dynamic memory allocation
 	void * sbrk(intptr_t incr);
 
 	
-	1. free block organization
+	free block organization
 		1. implicit free lists
 			1. the free blocks are linked implicitly by the size fields in the headers which encodes
 			   the block size and whether the block is allocated or free 
@@ -186,7 +186,7 @@ Dynamic memory allocation
 				6. fast searching and coalescing
 				7. significant internal fragmentation
 				   
-	2. allocated block placement policy
+	allocated block placement policy
 		1. first fit
 			1. searche the free list from the beginning and chooses the first free block that fits
 			
@@ -206,7 +206,7 @@ Dynamic memory allocation
 			3. require an exhaustive search of the heap with simple free list organizations 
 			   such as the implicit free list
 
-	3. coalescing policy
+	coalescing policy
 		1. immediate coalescing
 			1. performed in constant time 
 			2. thrashing where a block is repeatedly coalesced and then split soon thereafter
@@ -229,3 +229,63 @@ Dynamic memory allocation
 		
 	NOTICE: when there is no sufficiently large block for allocating after coalescing, allocator will asks the 
 	        kernel for additional heap memory by calling the sbrk function
+
+Garbage collection
+	basic
+		1. heap nodes, corresponds to allocated blocks in the heap
+		2. root nodes, correspond to locations not in the heap that contain pointers into the heap
+		3.  p → q means that some location in block p points to some location in block q
+		4. reachable node q,  exists a directed path from any root node to q; unreachable nodes, 
+		   correspond to garbage that can never be used again
+
+		5. conservative garbage collectors, each reachable block is correctly identified as reachable, 
+		   while some unreachable nodes might be incorrectly identified as reachable
+		   
+	Mark & Sweep garbage collectors
+		a Mark & Sweep garbage collector consists of 
+			1. a mark phase, which marks all reachable and allocated descendants of the root nodes
+				void mark(void * p)
+				{
+					/* if p points to some word in an allocated block, it returns a pointer 
+					   b to the beginning of that block. Returns NULL otherwise
+					   
+					   however, in C, there is no obvious way to tell if p is a pointer. 
+					   Thus, the allocator must assume it is and conservatively mark 
+					   the block it points to reachable, when in fact it might not be
+					   
+					   even if p is a pointer, there is also no obvious way to determind whether
+					   p points to some location in the payload of an allocated block. One solution
+					   is maintaining the set of allocated blocks as a balanced binary tree that 
+					   maintains the invariant that all blocks in the left subtree are located at 
+					   smaller addresses and all blocks in the right subtree are located in larger 
+					   addresses, using the tree to perform a binary search of the allocated blocks,
+					   relying on the block size and block header address to determine if p falls 
+					   within the extent of the block at each searching step
+					*/
+					void * b = is_ptr(p);
+					if (b)
+						return;
+					if (is_marked(b))
+						return;
+					mark_block(b);
+					int len = length(b);
+					for (int i = 0; i < len; i++)
+						mark(b->ele[i]);
+				}
+				
+			2. a sweep phase, which frees each unmarked allocated block
+				void sweep(void * b, void * end)
+				{
+					void * tmp;
+					while (b < end)
+					{
+						tmp = next_block(b);
+						if (is_marked(b))
+							unmark_block(b);
+						/* true if block b is allocated */
+						else if (is_allc(b))
+							free(b);
+						b = tmp;
+					}
+				}
+	
