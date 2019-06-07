@@ -58,9 +58,10 @@ Linux/x86_64 system call
 	|---------------------------------------------------------------------------------|
 	| 4 	 | stat	 | get info about file  | 59 	 | execve | execute a program	  |
 	----------------------------------------------------------------------------------|
-	| 9 	 | mmap	 | reset the top 	| 60 	 | _exit  | terminate process	  |
+	| 9 	 | mmap	 | map memory page to  	| 60 	 | _exit  | terminate process	  |
+	|	 |	 | file			|	 |	  |			  |
 	----------------------------------------------------------------------------------|
-	| 12 	 | brk 	 | interrupt or trap of | 61	 | wait4  | wait for a process	  |
+	| 12 	 | brk 	 | reset the top of 	| 61	 | wait4  | wait for a process	  |
 	|	 |	 | the heap 		|	 |	  | to terminate	  |
 	----------------------------------------------------------------------------------|
 	| 32 	 | dup2  | copy file descriptor | 62 	 | kill   | send signal to a	  |
@@ -207,22 +208,22 @@ Signals
 	|----------------------------------------------------------------------|
 	| 4      | SIGILL    | terminate       | illegal instruction	       |
 	|----------------------------------------------------------------------|
-	| 5      | SIGTRAP   | terminate       | trace trap		       |
+	| 5      | SIGTRAP   | terminate and   | trace trap		       |
 	|	 |	     | dump core       |			       |
 	|----------------------------------------------------------------------|
-	| 6      | SIGABRT   | terminate       | abort signal from abort       |
+	| 6      | SIGABRT   | terminate and   | abort signal from abort       |
 	|	 |	     | dump core       | function		       |
 	|----------------------------------------------------------------------|
 	| 7      | SIGBUS    | terminate       | bus error		       |
 	|----------------------------------------------------------------------|
-	| 8      | SIGFPE    | terminate       | floating-point exception      |
+	| 8      | SIGFPE    | terminate and   | floating-point exception      |
 	|	 |	     | dump core       |			       |
 	|----------------------------------------------------------------------|
 	| 9      | SIGKILL   | terminate       | kill program		       |
 	|----------------------------------------------------------------------|
 	| 10     | SIGUSR1   | terminate       | user-defined signal 1	       |
 	|----------------------------------------------------------------------|
-	| 11     | SIGSEGV   | terminate       | invalid memory reference      |
+	| 11     | SIGSEGV   | terminate and   | invalid memory reference      |
 	|	 |	     | dump core       | （seg fault)		      |
 	|----------------------------------------------------------------------|
 	| 12     | SIGUSR2   | terminate       | user-defined signal 2	       |
