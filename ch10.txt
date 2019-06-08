@@ -1,0 +1,206 @@
+Unix I/O
+	open file
+		1. the kernel keeps track of all information about the open file but 
+		   the application only keeps track of the descriptor
+		2. each process created by a Linux shell begins life with three open files: 
+			standard input (descriptor 0, STDIN_FILENO in <unistd.h>)
+			standard output (descriptor 1, STDOUT_FILENO)
+			standard error (descriptor 2, STDERR_FILENO)
+			
+	position
+		the kernel maintains a file position k is a byte offset from the beginning of
+		a file, initially 0, for each open file (entry of open table)
+		
+	reading and writing
+		1. reading and writing will update position k. 
+		
+		2. given a file with a size of m bytes, performing a read operation when k ≥ m
+		   triggers a condition known as end-offile (EOF)
+		3. there is no explicit "EOF character" at the end of a file
+
+File
+	directory file 
+		a directory is a file consisting of an array of links, where each link maps 
+		a filename to a file, which may be another directory
+	regular file (text, binary)
+	socket
+	pipe
+	symbolic link
+	character device
+	block device
+	
+	#include <fcntl.h>
+	/* creates a new open file description (the entries in the table of open files)
+		args
+			flags
+				O_RDONLY
+				O_WRONLY
+				O_WRONLY
+				O_CREAT (ORed with WR)
+				O_TRUNC (ORed with WR)
+				O_APPEND (ORed with WR)
+			mode (when creating, the access permission bits of the file are set to 
+			      mode & ~umask.  each process has a umask that is set by calling
+			      the umask function)
+				0
+				S_IRUSR, user (owner) can read this file
+				S_IWUSR, user (owner) can write this file
+				S_IXUSR, user (owner) can execute this file
+				S_IRGRP, members of the owner's group can read this file
+				S_IWGRP, members of the owner's group can write this file
+				S_IXGRP, members of the owner's group can execute this file
+				S_IROTH, others (anyone) can read this file
+				S_IWOTH, others (anyone) can write this file
+				S_IXOTH, others (anyone) can execute this file
+		   returns: smallest file descriptor if OK, −1 on error
+	*/
+	int open(const char * pathname, int flags, mode_t mode);
+	
+	
+	#include <unistd.h>
+	/* returns: 0 if OK, −1 on error */
+	int close(int fd);
+	
+	/* copies at most n bytes from the current file position of descriptor fd
+	   to memory location buf
+		returns: number of bytes read if OK, 0 on EOF, −1 on error 
+		NOTICE: 1. transfer fewer bytes than the application requests (short counts) 
+			   occur for a number of reasons:
+				encountering EOF on read
+				reading text lines from a terminal
+				reading network sockets (network delays)
+				reading pipe
+				
+			2. return value type sszie_t is signed size_t. Thus, it reduces 
+			   the maximum size of a read by a factor of 2
+	*/
+	ssize_t read(int fd, void * buf, size_t n);
+	
+	/* copies at most n bytes from memory location buf to the current file 
+	   position of descriptor fd
+		returns: number of bytes written if OK, −1 on error 
+		NOTICE: 1. transfer fewer bytes than the application requests (short counts) 
+			   occur for a number of reasons:
+				writing network sockets (network delays)
+				writing pipe
+			
+			2. return value type sszie_t is signed size_t. Thus, it reduces 
+			   the maximum size of a write by a factor of 2
+	*/
+	ssize_t write(int fd, const void * buf, size_t n);
+	
+	/* returns: 0 if OK, −1 on error */
+	int stat(const char * filename, struct stat * buf);
+	
+	/* returns: 0 if OK, −1 on error */
+	int fstat(int fd, struct stat * buf);
+	
+	/* metadata returned by the stat and fstat functions */
+	struct stat 
+	{
+		dev_t st_dev; /* device */
+		ino_t st_ino; /* inode */
+		mode_t st_mode; /* protection and file type 
+					#include <sys/stat.h>
+					S_ISREG(m), is this a regular file?
+					S_ISDIR(m), is this a directory file?
+					S_ISSOCK(m), is this a network socket?
+				*/
+		nlink_t st_nlink; /* number of hard links */
+		uid_t st_uid; /* user ID of owner */
+		gid_t st_gid; /* group ID of owner */
+		dev_t st_rdev; /* device type (if inode device) */
+		off_t st_size; /* total size, in bytes */
+		unsigned long st_blksize; /* block size for filesystem I/O */
+		unsigned long st_blocks; /* number of blocks allocated */
+		time_t st_atime; /* time of last access */
+		time_t st_mtime; /* time of last modification */
+		time_t st_ctime; /* time of last change */
+	};
+	
+	#include <dirent.h>
+	/* returns: pointer to the directory stream if OK, NULL on error */
+	DIR * opendir(const char * name);
+
+	/* returns: 
+		pointer to next directory entry in the stream dirp if OK, 
+		NULL and sets errno if error
+		NULL if no more entries
+	*/
+	struct dirent * readdir(DIR * dirp);
+	
+	struct dirent 
+	{
+		ino_t d_ino; /* inode number */
+		char d_name[256]; /* filename */
+		...
+	};
+	
+	/* returns: 0 on success, −1 on error */
+	int closedir(DIR * dirp);
+
+Sharing files
+	data structure
+		descriptor table
+			1. each process has its own separate descriptor table whose 
+			   entries are indexed by the process's open file descriptors
+			2. each open descriptor entry points to an entry in the file table
+		
+		file table
+			1. open files is represented by a file table that is shared 
+			   by all processes
+			2. each file table entry consists of the current file position, 
+			   a reference count of the number of descriptor entries that
+			   currently point to it, a pointer to an entry in the v-node
+			   table, the file offset (position) and the file status flags
+			3. the kernel will not delete the file table entry until its
+			   reference count is zero
+			   
+		v-node table
+			1. shared by all processes			
+			2. each entry contains most of the information in the stat structure
+		
+		NOTICE: multiple descriptors can also reference the same file 
+		        (same v-node table) through different file table entries. This might 
+			happen, for example, if you were to call the open function twice
+			with the same filename
+
+I/O redirection
+	#include <unistd.h>
+	/* copies descriptor table entry oldfd to descriptor table entry newfd , 
+	   overwriting the previous contents of descriptor table entry newfd . 
+	   If newfd was already open, then closes newfd before it copies oldfd 
+		returns: nonnegative descriptor if OK, −1 on error 
+	*/
+	int dup2(int oldfd, int newfd);
+
+Standard I/O
+	#include <stdio.h>
+	/* a stream of type FILE is an abstraction for a file descriptor and a
+	   stream buffer. The purpose of the stream buffer is to minimize the number of
+	   expensive Linux I/O system calls
+	*/
+	extern FILE * stdin; 
+	extern FILE * stdout; 
+	extern FILE * stderr; 
+	
+	1. function fopen and fclose are for opening and closing files
+	2. fread and fwrite are for reading and writing bytes
+	3. fgets and fputs are reading and writing strings
+	4. fdopen, fscanf, fprintf, sscanf, sprintf, fflush, fseek
+	
+	NOTICE: 
+		1. standard I/O streams are full duplex in the sense that programs can
+		   perform input and output on the same stream
+		2. output shall not be directly followed by input without an intervening
+		   call to the fflush function or to a file positioning function 
+		   (fseek, fsetpos, or rewind)
+		3. input shall not be directly followed by output without an intervening
+		   call to a file positioning function, unless the input operation
+		   encounters end-of-file
+		   
+	   	4. it is illegal to use the lseek function (and other high-level implements
+		   on it) on a socket. Thus, the only way to work around the restrictions
+		   above is to open two streams on the same open socket file, 
+		   one for reading and one for writing
+	   
