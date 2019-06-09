@@ -200,7 +200,6 @@ Standard I/O
 		   encounters end-of-file
 		   
 	   	4. it is illegal to use the lseek function (and other high-level implements
-		   on it) on a socket. Thus, the only way to work around the restrictions
-		   above is to open two streams on the same open socket file, 
-		   one for reading and one for writing
+		   on it) on a socket. Thus, stardard I/O functions is not suitable for
+		   operations of network sockets
 	   
