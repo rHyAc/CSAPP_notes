@@ -167,8 +167,8 @@ Sharing files
 
 I/O redirection
 	#include <unistd.h>
-	/* copies descriptor table entry oldfd to descriptor table entry newfd , 
-	   overwriting the previous contents of descriptor table entry newfd . 
+	/* copies descriptor table entry oldfd to descriptor table entry newfd, 
+	   overwriting the previous contents of descriptor table entry newfd. 
 	   If newfd was already open, then closes newfd before it copies oldfd 
 		returns: nonnegative descriptor if OK, −1 on error 
 	*/
