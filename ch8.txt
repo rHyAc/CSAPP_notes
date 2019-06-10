@@ -170,7 +170,7 @@ Loading and running programs
 			does not return if OK; 
 			-1 on error 
 	   	NOTICE
-	   		the global variable (char **)environ points to the first of env pointers, envp [0]
+	   		the global variable (char **)environ points to the first of system env pointers, envp [0]
 	*/
 	int execve(const char * filename, const char * argv[], const char * envp[]);
 	
