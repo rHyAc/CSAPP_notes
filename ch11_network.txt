@@ -260,3 +260,42 @@ Socket
 			   as long as it takes the server to service a client
 	*/
 	int accept(int listenfd, struct sockaddr * addr, int * addrlen);
+
+Web server
+	1. URLs (universal resource locator, a unique name of file) for executable files can include
+	   program arguments after the filename. A `?' character separates the filename from the arguments,
+	   and each argument is separated by an `&' character. Spaces are not allowed in arguments and must be 
+	   represented with the %20 string. Similar encodings exist for other special characters
+	2. URI (uniform resource identifier) is the suffix of the corresponding URL that includes the filename 
+	   and optional arguments (when a browser requests content. If a proxy server requests content, 
+	   then the URI must be the complete URL)
+	   
+	3. HTTP/1.1 allows a client and server to perform multiple transactions over the same persistent connection
+	4. in practice, the two versions are compatible because HTTP/1.0 clients and servers simply ignore 
+	   unknown HTTP/1.1 headers
+	 
+	5. http requests 
+		method URI version		/* request line. e.g., GET / HTTP/1.1 */
+		header-name: header-data	/* request header. e.g., HOST www.xxx.com
+		header-name: header-data	   The data in the Host header, which identifies the domain name of 
+		...				   the origin server, allow a proxy in the middle of a proxy chain to 
+						   determine if it might have a locally cached copy of the requested 
+						   content
+		...				*/
+						/* empty line terminates headers */
+		
+	6. http responses
+		version status-code status-message /* response line. e.g., HTTP/1.0 200 OK
+						      The status-code is a three-digit positive integer that indicates 
+						      the disposition of the request
+						   */
+		...				   /* response header */
+						   /* empty line terminates headers */
+		...				   /* response body */
+		
+	7. dynamic content
+		1. after receive a request, the cgi program calls fork to create a child process sets the CGI environment 
+		   variable QUERY_STRING (using setenv function) (can reference using getenv function) to arguments that 
+		   following '?' in requested URI, and calls execve to run the program indicated by the URI. 
+		2. it also uses the dup2 function to redirect standard output to the connecteddescriptor that is associated 
+		   with the client (also redirect standard input to the connected descriptor for POST requests)
