@@ -125,7 +125,7 @@ Concurrency with threads
 Shared variable
 	local static variables in thread routines are shared by all threads
 
-synchronization
+synchronization (expensive)
 	1. progress graph (uniprocessors only)
 		1.  the execution of n concurrent threads is a directed trajectory through an n-dimensional 
 		    Cartesian space
@@ -173,3 +173,19 @@ synchronization
 		   accepting a connection
 		3. the thread routine (consumer) receives a connected descriptor from buffer and 
 		   serve the client's request
+
+	4. thread-safe
+		1. a function is said to be thread-safe if and only if it will always produce correct results 
+		   when called repeatedly from multiple concurrent threads
+		   
+		2. functions that relies (static variables) state across multiple invocations is thread-unsafe
+		3. functions that return a pointer to a static variable is thread-unsafe
+			solution: at each call site, lock the mutex, call the threadunsafe function, 
+				  copy the result returned by the function to a private memory location,
+				  and then unlock the mutex (lock-and-copy)
+	
+	5. reentrant functions (thread-safe)
+		do not reference any shared data when they are called by multiple threads
+	
+	6. mutex lock ordering rule: a program is deadlock-free if each thread acquires its mutexes in
+				     order and releases them in reverse order
