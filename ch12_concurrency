@@ -105,7 +105,7 @@ Concurrency with threads
 	   Subsequent calls to pthread_once with the same once_control variable do nothing
 	   	return: always 0
 		NOTICE: it is useful whenever need to dynamically initialize global variables
-			that are shared by multiple threads
+			that are shared by multiple threads in the thread routine
 	*/
 	int pthread_once(pthread_once_t * once_control, void (* init_routine)(void));
 	
@@ -123,4 +123,53 @@ Concurrency with threads
 		3. each condfd should be free and close in the thread routine
 		
 Shared variable
-	1. local static variables in thread routines are shared by all threads
+	local static variables in thread routines are shared by all threads
+
+synchronization
+	1. progress graph (uniprocessors only)
+		1.  the execution of n concurrent threads is a directed trajectory through an n-dimensional 
+		    Cartesian space
+		2. each axis k corresponds to the progress of thread k
+		3. each point represents the state where thread k has completed corresponding instruction
+		4. the origin of the graph corresponds to the initial state where none of the threads 
+		   has yet completed an instruction
+		
+		5. manipulate the contents of the shared variable constitute a critical section that 
+		   should not be interleaved with the critical section of the other thread
+		6. the intersection of the two critical sections defines a region of the state space 
+		   known as an unsafe region (does not include its perimeter)
+		7. a trajectory that touches any part of the unsafe region is an unsafe trajectory
+	
+	2. semaphores
+		for a semaphore s
+			P (s): if s is nonzero, then P decrements s and returns immediately.
+			       If s is zero, then suspend the thread until s becomes nonzero and
+			       the thread is restarted by a V operation. After restarting, the P
+			       operation decrements s and returns control to the caller.
+			V (s): the V operation increments s by 1. If there are any threads
+			       blocked at a P operation waiting for s to become nonzero, then the
+			       V operation restarts exactly one of these threads, which then
+			       completes its P operation by decrementing s.
+	
+		#include <semaphore.h>
+		/* nitializes semaphore sem to value
+			returns: 0 if OK, −1 on error
+		*/
+		int sem_init(sem_t * sem, 0, unsigned int value);
+
+		/* P(s)
+			returns: 0 if OK, −1 on error
+		*/
+		int sem_wait(sem_t *s); 
+
+		/* V(s)
+			returns: 0 if OK, −1 on error
+		*/
+		int sem_post(sem_t *s); 
+		
+	3. prethreading server
+		1. create threads before accepting connections
+		2. the main thread (producer) places a connected descriptor into buffer each time
+		   accepting a connection
+		3. the thread routine (consumer) receives a connected descriptor from buffer and 
+		   serve the client's request
