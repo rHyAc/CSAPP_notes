@@ -210,7 +210,7 @@ Instructions
 	
 Condition registers
 	CF: carry flag. The most recent operation generated a carry out of the most significant bit. 
-	    Used to detect overflow for unsignedoperations.
+	    Used to detect overflow for unsigned operations.
 	ZF: zero flag. The most recent operation yielded zero.
 	SF: sign flag. The most recent operation yielded a negative value.
 	OF: overflow flag. The most recent operation caused a two'scomplement overflow—either negative or positive.
