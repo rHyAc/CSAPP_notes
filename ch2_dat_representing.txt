@@ -38,7 +38,7 @@ IEEE float point representation
 	1. normalized values: exp bit field is neither all zeros nor ones
 	2. denormalized values: exp bit field is all zeros. In this case the exp value is 
 	   E = 1 - bias(127 for 32bit, 2^(8 - 1) - 1), while the significant value without an implied leading 1. 
-	   This case is serve for representation of +/-0.0 and values evenly near 0.0
+	   This case serve for representation of +/-0.0 and values evenly near 0.0
 	3. special values: exp bit field is all ones. When fraction field is all zeros, it represent +/-infinity; 
 	   When it isn't, the value is called a "NaN" used to represent sqrt(-1) sometimes
 
