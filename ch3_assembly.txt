@@ -102,7 +102,7 @@ Instructions
 	setle/setng D  
 		D ← (SF ^ OF) | ZF, less or equal (signed <=)
 	seta/setnbe D  
-		D ← ~CF & ~ ZF, above (unsigned >)
+		D ← ~CF & ~ZF, above (unsigned >)
 	setae/setnb D  
 		D ← ~CF, above or equal (unsigned >=)
 	setb/setnae D  
