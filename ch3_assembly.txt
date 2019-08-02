@@ -90,7 +90,7 @@ Instructions
 	setne/setnz D  
 		D ← ~ZF, not equal / not zero
 	sets D 
-		D ← SF, egative
+		D ← SF, negative
 	setns D 
 		D ← ~SF, nonnegative
 	setg/setnle D  
