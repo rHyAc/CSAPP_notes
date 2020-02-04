@@ -40,7 +40,7 @@ Optimizing performance
 			}
 			/* rather than */
 			//while (i < n && j < n)
-			//	if (p[i] < q[j];
+			//	if (p[i] < q[j])
 			//		dest[k++] = p[i++];
 			//	else
 			//		dest[k++] = q[j++];
